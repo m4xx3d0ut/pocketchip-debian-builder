@@ -1,0 +1,21 @@
+# USB-root boot support for PocketCHIP.
+#
+# Debian's MODULES=most includes the generic EHCI/OHCI platform drivers here,
+# but not all of the Allwinner USB PHY, USB storage, and SCSI disk modules.
+# Keep these explicit so root=LABEL=pocketroot can appear from initramfs.
+i2c-mv64xxx
+axp20x-regulator
+axp20x_usb_power
+axp20x_ac_power
+axp20x_battery
+axp20x_adc
+pinctrl-axp209
+phy-sun4i-usb
+ehci-platform
+ohci-platform
+usb-storage
+uas
+scsi_common
+scsi_mod
+sd_mod
+ext4

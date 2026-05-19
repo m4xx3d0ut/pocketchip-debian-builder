@@ -1,0 +1,62 @@
+# Base system
+apt-transport-https
+ca-certificates
+dbus
+initramfs-tools
+kmod
+locales
+sudo
+systemd
+udev
+
+# Kernel, boot, firmware
+firmware-linux-free
+firmware-realtek
+linux-base
+linux-image-armmp
+u-boot-tools
+wireless-regdb
+
+# Network and device diagnostics
+bluez
+curl
+dnsutils
+ethtool
+evtest
+htop
+i2c-tools
+iproute2
+iputils-ping
+jq
+less
+lsof
+net-tools
+network-manager
+openssh-client
+openssh-server
+psmisc
+rfkill
+ripgrep
+usbutils
+vim-tiny
+wpasupplicant
+
+# Pocket terminal workflow
+git
+neovim
+tmux
+zsh
+
+# Audio/display/desktop
+alsa-utils
+fonts-dejavu-core
+dmenu
+i3-wm
+i3status
+mesa-utils
+upower
+x11-xserver-utils
+xinit
+xserver-xorg-core
+xserver-xorg-input-libinput
+xterm

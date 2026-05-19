@@ -1,0 +1,33 @@
+set $mod Mod1
+font pango:DejaVu Sans Mono 8
+
+floating_modifier $mod
+focus_follows_mouse no
+default_border pixel 1
+hide_edge_borders smart
+
+bindsym $mod+Return exec xterm
+bindsym $mod+d exec dmenu_run
+bindsym $mod+Shift+q kill
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exit
+
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+bindsym $mod+f fullscreen toggle
+bindsym $mod+space focus mode_toggle
+
+bar {
+    status_command i3status
+    position top
+    tray_output none
+}
+
