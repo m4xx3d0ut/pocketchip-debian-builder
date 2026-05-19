@@ -1,0 +1,8 @@
+build/
+.codex/
+__pycache__/
+*.py[cod]
+*.img
+*.dtb
+*.dtbo
+*.tmp
