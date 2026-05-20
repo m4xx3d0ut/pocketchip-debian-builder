@@ -12,36 +12,36 @@ title_align center
 
 set $term xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7
 
-bindsym $mod+Return exec $term
-bindsym $mod+d exec pocketchip-menu
+bindsym $mod+Return exec --no-startup-id $term
+bindsym $mod+d exec --no-startup-id pocketchip-menu
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exit
 
-bindsym $mod+Shift+slash exec $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
-bindsym $mod+i exec $term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
-bindsym $mod+w exec pocketchip-browser
-bindsym $mod+Shift+w exec pocketchip-browser light
-bindsym $mod+Left exec pocketchip-browser-action back
-bindsym $mod+Right exec pocketchip-browser-action forward
-bindsym $mod+Up exec pocketchip-browser-action page-up
-bindsym $mod+Down exec pocketchip-browser-action page-down
-bindsym $mod+u exec pocketchip-browser-action url
-bindsym $mod+r exec pocketchip-browser-action reload
-bindsym $mod+Shift+f exec pocketchip-browser-action fullscreen
-bindsym $mod+m exec pocketchip-menu
-bindsym $mod+x exec pocketchip-power menu
-bindsym $mod+Escape exec pocketchip-power lock
-bindsym $mod+Shift+x exec pocketchip-power low-lock
+bindsym $mod+Shift+slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
+bindsym $mod+i exec --no-startup-id $term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
+bindsym $mod+w exec --no-startup-id pocketchip-browser
+bindsym $mod+Shift+w exec --no-startup-id pocketchip-browser light
+bindsym $mod+Left exec --no-startup-id pocketchip-browser-action back
+bindsym $mod+Right exec --no-startup-id pocketchip-browser-action forward
+bindsym $mod+Up exec --no-startup-id pocketchip-browser-action page-up
+bindsym $mod+Down exec --no-startup-id pocketchip-browser-action page-down
+bindsym $mod+u exec --no-startup-id pocketchip-browser-action url
+bindsym $mod+r exec --no-startup-id pocketchip-browser-action reload
+bindsym $mod+Shift+f exec --no-startup-id pocketchip-browser-action fullscreen
+bindsym $mod+m exec --no-startup-id pocketchip-menu
+bindsym $mod+x exec --no-startup-id pocketchip-power menu
+bindsym $mod+Escape exec --no-startup-id pocketchip-power lock
+bindsym $mod+Shift+x exec --no-startup-id pocketchip-power low-lock
 bindsym $mod+Shift+c exec --no-startup-id pocketchip-power caffeine
-bindsym $mod+Shift+p exec pocketchip-power performance
-bindsym $mod+n exec $term -e pocketchip-connect wifi
-bindsym $mod+b exec $term -e pocketchip-connect bt
-bindsym $mod+Shift+n exec $term -e pocketchip-connect menu
-bindsym $mod+c exec $term -geometry 74x16 -e pocketchip-control menu
-bindsym $mod+v exec $term -geometry 74x18 -e pocketchip-control volume
-bindsym $mod+Shift+v exec $term -geometry 74x14 -e pocketchip-control brightness
-bindsym $mod+Shift+t exec $term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu
+bindsym $mod+Shift+p exec --no-startup-id pocketchip-power performance
+bindsym $mod+n exec --no-startup-id $term -e pocketchip-connect wifi
+bindsym $mod+b exec --no-startup-id $term -e pocketchip-connect bt
+bindsym $mod+Shift+n exec --no-startup-id $term -e pocketchip-connect menu
+bindsym $mod+c exec --no-startup-id $term -geometry 74x16 -e pocketchip-control menu
+bindsym $mod+v exec --no-startup-id $term -geometry 74x18 -e pocketchip-control volume
+bindsym $mod+Shift+v exec --no-startup-id $term -geometry 74x14 -e pocketchip-control brightness
+bindsym $mod+Shift+t exec --no-startup-id $term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu
 
 bindsym $mod+h focus left
 bindsym $mod+j focus down
@@ -53,7 +53,7 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-bindsym $mod+f exec pocketchip-browser-action fullscreen
+bindsym $mod+f exec --no-startup-id pocketchip-browser-action fullscreen
 bindsym $mod+space focus mode_toggle
 bindsym $mod+Shift+space floating toggle
 
@@ -66,16 +66,16 @@ bindsym $mod+Shift+2 move container to workspace number 2
 bindsym $mod+Shift+3 move container to workspace number 3
 bindsym $mod+Shift+4 move container to workspace number 4
 
-bindsym XF86MonBrightnessUp exec pocketchip-control brightness-up
-bindsym XF86MonBrightnessDown exec pocketchip-control brightness-down
-bindsym XF86AudioRaiseVolume exec pocketchip-control volume-up
-bindsym XF86AudioLowerVolume exec pocketchip-control volume-down
-bindsym XF86AudioMute exec pocketchip-control volume-mute
-bindsym $mod+equal exec pocketchip-control brightness-up
-bindsym $mod+minus exec pocketchip-control brightness-down
-bindsym $mod+period exec pocketchip-control volume-up
-bindsym $mod+comma exec pocketchip-control volume-down
-bindsym $mod+slash exec pocketchip-control volume-mute
+bindsym XF86MonBrightnessUp exec --no-startup-id pocketchip-control brightness-up
+bindsym XF86MonBrightnessDown exec --no-startup-id pocketchip-control brightness-down
+bindsym XF86AudioRaiseVolume exec --no-startup-id pocketchip-control volume-up
+bindsym XF86AudioLowerVolume exec --no-startup-id pocketchip-control volume-down
+bindsym XF86AudioMute exec --no-startup-id pocketchip-control volume-mute
+bindsym $mod+equal exec --no-startup-id pocketchip-control brightness-up
+bindsym $mod+minus exec --no-startup-id pocketchip-control brightness-down
+bindsym $mod+period exec --no-startup-id pocketchip-control volume-up
+bindsym $mod+comma exec --no-startup-id pocketchip-control volume-down
+bindsym $mod+slash exec --no-startup-id pocketchip-control volume-mute
 
 exec --no-startup-id pocketchip-touch-calibrate apply
 exec --no-startup-id pocketchip-splash desktop
