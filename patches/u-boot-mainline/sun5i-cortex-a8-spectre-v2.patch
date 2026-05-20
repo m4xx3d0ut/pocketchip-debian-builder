@@ -1,0 +1,12 @@
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index 57c18c6251..02f6789a5c 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -368,6 +368,7 @@ config MACH_SUN4I
+ config MACH_SUN5I
+ 	bool "sun5i (Allwinner A13)"
+ 	select CPU_V7A
++	select ARM_CORTEX_A8_CVE_2017_5715
+ 	select DRAM_SUN4I
+ 	select SUNXI_GEN_SUN4I
+ 	select SUPPORT_SPL

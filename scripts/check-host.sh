@@ -44,6 +44,22 @@ need qemu-arm-static
 need sunxi-fel
 optional fastboot
 optional mkimage
+optional mkfs.ubifs
+optional ubinize
+optional img2simg
+optional simg2img
+optional sunxi-nand-image-builder
+optional arm-linux-gnueabi-gcc
+
+if python3 - <<'PY' >/dev/null 2>&1
+import PIL.Image
+PY
+then
+  printf 'ok      python3 Pillow\n'
+else
+  printf 'missing python3 Pillow\n'
+  missing=1
+fi
 
 if [[ -r /usr/include/openssl/ssl.h ]]; then
   printf 'ok      libssl-dev headers\n'
@@ -72,10 +88,11 @@ Install the expected Debian/Ubuntu host dependencies with:
   sudo apt install \
     bc binfmt-support bison build-essential device-tree-compiler e2fsprogs \
     curl fastboot flex gcc-arm-linux-gnueabihf git gnupg libssl-dev mmdebstrap openssl swig \
-    qemu-user-static ripgrep rsync sunxi-tools u-boot-tools util-linux
+    python3-pil qemu-user-static ripgrep rsync sunxi-tools u-boot-tools util-linux
 
 MSG
   exit 1
 fi
 
 printf '\nHost looks ready.\n'
+printf 'Run ./scripts/nand-preflight.sh before NAND image or flash work.\n'
