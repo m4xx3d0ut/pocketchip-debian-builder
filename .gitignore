@@ -1,8 +1,10 @@
 build/
 .codex/
+configs/local.env
 __pycache__/
 *.py[cod]
 *.img
 *.dtb
 *.dtbo
 *.tmp
+.local/
