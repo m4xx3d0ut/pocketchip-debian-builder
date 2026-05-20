@@ -33,23 +33,17 @@
 				enable-gpios = <&pio 3 18 GPIO_ACTIVE_HIGH>; /* PD18 */
 			};
 
-				panel {
-					#address-cells = <1>;
-					#size-cells = <0>;
-					compatible = "olimex,lcd-olinuxino-43-ts";
-					backlight = <&backlight>;
+			panel {
+				compatible = "olimex,lcd-olinuxino-43-ts";
+				power-supply = <&reg_vcc3v3>;
+				backlight = <&backlight>;
 
-					port@0 {
-						reg = <0>;
-						#address-cells = <1>;
-						#size-cells = <0>;
-
-						panel_input: endpoint@0 {
-							reg = <0>;
-							remote-endpoint = <&tcon0_out_panel>;
-						};
+				port {
+					panel_input: endpoint {
+						remote-endpoint = <&tcon0_out_panel>;
 					};
 				};
+			};
 		};
 	};
 
@@ -168,21 +162,35 @@
 		};
 	};
 
-		fragment@5 {
-			target = <&tcon0_out>;
+	fragment@5 {
+		target = <&tcon0_out>;
 
-			__overlay__ {
-				#address-cells = <1>;
-				#size-cells = <0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
 
-				tcon0_out_panel: endpoint@0 {
-					reg = <0>;
-					remote-endpoint = <&panel_input>;
-				};
+			tcon0_out_panel: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&panel_input>;
+			};
+
+			endpoint@1 {
+				reg = <1>;
+				status = "disabled";
+				remote-endpoint = <0>;
+			};
 		};
 	};
 
 	fragment@6 {
+		target = <&tve0>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@7 {
 		target-path = "/leds/led-0";
 
 		__overlay__ {
