@@ -352,10 +352,10 @@ this root verifier path is needed.
 For a persistence smoke test:
 
 ```sh
-echo nand-persist-test-$(date +%s) >/home/m4xx3d0ut/nand-persist-test.txt
+echo nand-persist-test-$(date +%s) >"$HOME/nand-persist-test.txt"
 sync
 reboot
-cat /home/m4xx3d0ut/nand-persist-test.txt
+cat "$HOME/nand-persist-test.txt"
 ```
 
 ## Recovery Notes

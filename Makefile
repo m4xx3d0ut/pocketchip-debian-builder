@@ -172,4 +172,8 @@ nand-rescue-install-usb-slc:
 	  --i-understand-this-erases-ubi
 
 nand-verify:
+	@test -n "$$POCKETCHIP_ROOT_PASSWORD" || { \
+	  printf 'Set POCKETCHIP_ROOT_PASSWORD or run scripts/fel-nand.py verify --root-password ...\\n' >&2; \
+	  exit 2; \
+	}
 	sudo ./scripts/fel-nand.py verify

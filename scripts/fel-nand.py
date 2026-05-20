@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-only
 import argparse
 import os
 import re
@@ -1014,9 +1015,11 @@ def main() -> int:
     rescue.add_argument("--port", type=int, default=int(os.environ.get("NAND_RESCUE_PORT", "4242")))
 
     verify_parser = sub.add_parser("verify", help="verify a NAND boot through the serial console")
-    verify_parser.add_argument("--root-password", default=os.environ.get("POCKETCHIP_ROOT_PASSWORD", "toor"))
+    verify_parser.add_argument("--root-password", default=os.environ.get("POCKETCHIP_ROOT_PASSWORD"))
 
     args = parser.parse_args()
+    if args.command == "verify" and not args.root_password:
+        parser.error("verify requires --root-password or POCKETCHIP_ROOT_PASSWORD")
     args.nand_dir.mkdir(parents=True, exist_ok=True)
 
     try:
