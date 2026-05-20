@@ -3,6 +3,7 @@ set -eu
 
 root_helper=/usr/local/sbin/pocketchip-power-root
 lock_dir=/tmp/pocketchip-power-lock
+caffeine_state="/tmp/pocketchip-caffeine-$(id -u 2>/dev/null || printf 0)"
 
 term() {
   exec xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 "$@"
@@ -16,6 +17,10 @@ Usage:
   pocketchip-power low-lock
   pocketchip-power performance
   pocketchip-power normal
+  pocketchip-power caffeine
+  pocketchip-power caffeine-on
+  pocketchip-power caffeine-off
+  pocketchip-power caffeine-status
   pocketchip-power screen-off
   pocketchip-power screen-on
   pocketchip-power logout
@@ -78,14 +83,67 @@ enable_local_inputs() {
 
 screen_off() {
   need xset
+  xset +dpms 2>/dev/null || true
   xset s activate 2>/dev/null || true
   xset dpms force off
 }
 
-screen_on() {
+force_screen_on() {
   need xset
   xset s reset 2>/dev/null || true
+  xset +dpms 2>/dev/null || true
   xset dpms force on
+}
+
+caffeine_apply() {
+  need xset
+  force_screen_on
+  xset s off 2>/dev/null || true
+  xset s noblank 2>/dev/null || true
+  xset -dpms 2>/dev/null || true
+}
+
+caffeine_on() {
+  caffeine_apply
+  : >"$caffeine_state"
+  printf 'caffeine on: screen idle and DPMS disabled\n'
+}
+
+caffeine_off() {
+  need xset
+  rm -f "$caffeine_state"
+  xset s 600 600 2>/dev/null || true
+  xset +dpms 2>/dev/null || true
+  xset dpms 600 600 600 2>/dev/null || true
+  force_screen_on
+  printf 'caffeine off: restored 600s idle and DPMS timeouts\n'
+}
+
+caffeine_status() {
+  if [ -e "$caffeine_state" ]; then
+    printf 'caffeine on\n'
+  else
+    printf 'caffeine off\n'
+  fi
+  xset q 2>/dev/null | sed -n \
+    -e '/Screen Saver:/,/Colors:/ { /Colors:/d; p; }' \
+    -e '/DPMS (/,/Monitor is/p' || true
+}
+
+caffeine_toggle() {
+  if [ -e "$caffeine_state" ]; then
+    caffeine_off
+  else
+    caffeine_on
+  fi
+}
+
+screen_on() {
+  if [ -e "$caffeine_state" ]; then
+    caffeine_apply
+  else
+    force_screen_on
+  fi
 }
 
 lock_cleanup() {
@@ -158,6 +216,7 @@ stop_x() {
 power_menu() {
   choices='lock
 low-power-lock
+caffeine
 performance
 normal
 screen-off
@@ -187,6 +246,10 @@ run() {
     low-lock|low-power|low-power-lock) low_lock ;;
     performance|perf) performance_power ;;
     normal|radios-on) normal_power ;;
+    caffeine|caffeinate|stay-awake) caffeine_toggle ;;
+    caffeine-on|caffeinate-on|stay-awake-on) caffeine_on ;;
+    caffeine-off|caffeinate-off|stay-awake-off) caffeine_off ;;
+    caffeine-status) caffeine_status ;;
     screen-off) screen_off ;;
     screen-on) screen_on ;;
     logout)

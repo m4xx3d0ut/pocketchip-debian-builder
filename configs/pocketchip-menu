@@ -64,6 +64,9 @@ run_choice() {
     "power: low-lock"|low-power|low-power-lock|low-lock)
       exec pocketchip-power low-lock
       ;;
+    "power: caffeine"|caffeine|caffeinate|stay-awake)
+      exec pocketchip-power caffeine
+      ;;
     "power: performance"|performance|perf)
       exec pocketchip-power performance
       ;;
@@ -100,6 +103,7 @@ sys: help
 power: menu
 power: lock
 power: low-lock
+power: caffeine
 power: performance
 power: normal'
 

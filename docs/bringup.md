@@ -331,6 +331,7 @@ Mod+d            PocketCHIP app launcher
 Mod+x            power menu
 Mod+Esc          screen off + password lock
 Mod+Shift+x      low-power lock
+Mod+Shift+c      caffeine stay-awake toggle
 Mod+h/j/k/l      focus left/down/up/right
 Mod+Shift+h/j/k/l move window left/down/up/right
 Mod+1..4         switch workspace
@@ -352,7 +353,9 @@ Mod+Shift+slash  on-device cheat sheet
 X idle locking is enabled by `xss-lock` from `.xinitrc`. The default X
 screensaver and DPMS timeouts are 600 seconds. The kernel exposes `s2idle`, but
 daily power saving should use `pocketchip-power low-lock` until suspend/resume
-has been tested on the target device.
+has been tested on the target device. Use `pocketchip-power caffeine` or
+`Mod+Shift+c` to temporarily keep the screen on and disable X idle blanking;
+toggle it again to restore the 600 second policy.
 
 ## Touch and Battery
 

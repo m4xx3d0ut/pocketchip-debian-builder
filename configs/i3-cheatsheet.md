@@ -15,6 +15,7 @@ Mod is Alt on the PocketCHIP keyboard.
 | Mod+c | controls menu |
 | Mod+x | power menu |
 | Mod+Esc | screen off + password lock |
+| Mod+Shift+c | caffeine stay-awake toggle |
 
 Menu entries are grouped for dmenu filtering: `app:`, `net:`, `ctl:`, `sys:`,
 and `power:`.
@@ -70,6 +71,8 @@ keyboard-first.
 | pocketchip-power menu | lock/logout/reboot/poweroff menu |
 | pocketchip-power lock | password lock; screen off; wake by power or charger |
 | pocketchip-power low-lock | lock plus Wi-Fi/Bluetooth down and low CPU cap |
+| pocketchip-power caffeine | toggle stay-awake mode |
+| pocketchip-power caffeine-status | show stay-awake state and X idle policy |
 | pocketchip-power performance | switch CPU governor to performance |
 | pocketchip-power normal | restore CPU cap/governor and radios |
 | pocketchip-power screen-off | turn display off now |
