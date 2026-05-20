@@ -4,6 +4,12 @@ set -eu
 volume_step=${POCKETCHIP_VOLUME_STEP:-5%}
 preferred_volume_control=${POCKETCHIP_VOLUME_CONTROL:-Power Amplifier}
 alsa_card=${POCKETCHIP_ALSA_CARD:-0}
+uid="$(id -u 2>/dev/null || printf 0)"
+alert_file="/tmp/pocketchip-status-alert-$uid"
+status_pid_file="/tmp/pocketchip-status-$uid.pid"
+color_ok='#00ff66'
+color_warn='#ffd75f'
+color_dim='#66d9ef'
 
 usage() {
   cat <<'EOF'
@@ -27,6 +33,28 @@ need() {
   if ! command -v "$1" >/dev/null 2>&1; then
     printf 'missing command: %s\n' "$1" >&2
     exit 1
+  fi
+}
+
+status_alert() {
+  label="$1"
+  alert_color="${2:-$color_dim}"
+  ttl="${3:-4}"
+  now="$(date '+%s')"
+  expire=$((now + ttl))
+  tmp="$alert_file.$$"
+  {
+    printf '%s\n' "$expire"
+    printf '%s\n' "$alert_color"
+    printf '%s\n' "$label"
+  } >"$tmp" 2>/dev/null && mv "$tmp" "$alert_file" 2>/dev/null || rm -f "$tmp"
+
+  if [ -r "$status_pid_file" ]; then
+    pid="$(sed -n '1p' "$status_pid_file" 2>/dev/null || true)"
+    case "$pid" in
+      ''|*[!0-9]*) : ;;
+      *) kill -USR1 "$pid" 2>/dev/null || true ;;
+    esac
   fi
 }
 
@@ -74,6 +102,14 @@ brightness_status() {
   printf 'brightness %s/%s (%s%%)\n' "$actual" "$max" "$pct"
 }
 
+brightness_alert() {
+  set -- $(brightness_values)
+  actual=$2
+  max=$3
+  pct=$((actual * 100 / max))
+  status_alert "br ${pct}%"
+}
+
 brightness_set() {
   level="${1:-}"
   case "$level" in
@@ -91,6 +127,7 @@ brightness_set() {
 
   need brightnessctl
   brightnessctl -q -d "$(backlight_device)" set "$level"
+  brightness_alert
 }
 
 brightness_up() {
@@ -197,15 +234,26 @@ volume_status() {
   printf 'volume %s%% via %s, output %s\n' "${pct:-unknown}" "$control" "$route"
 }
 
+volume_alert() {
+  pct="$(volume_percent 2>/dev/null || true)"
+  if volume_route_enabled; then
+    status_alert "vol ${pct:---}%" "$color_dim"
+  else
+    status_alert "vol off" "$color_warn"
+  fi
+}
+
 volume_up() {
   control="$(volume_control)"
   volume_route_on
   amixer -q set "$control" "$volume_step+"
+  volume_alert
 }
 
 volume_down() {
   control="$(volume_control)"
   amixer -q set "$control" "$volume_step-"
+  volume_alert
 }
 
 volume_toggle() {
@@ -214,6 +262,7 @@ volume_toggle() {
   else
     volume_route_on
   fi
+  volume_alert
 }
 
 volume_mixer() {
@@ -271,8 +320,8 @@ case "$cmd" in
   volume-up|vol-up) volume_up ;;
   volume-down|vol-down) volume_down ;;
   volume-mute|volume-toggle|mute) volume_toggle ;;
-  volume-on|unmute) volume_route_on ;;
-  volume-off) volume_route_off ;;
+  volume-on|unmute) volume_route_on; volume_alert ;;
+  volume-off) volume_route_off; volume_alert ;;
   status) status ;;
   -h|--help|help) usage ;;
   *) usage >&2; exit 2 ;;

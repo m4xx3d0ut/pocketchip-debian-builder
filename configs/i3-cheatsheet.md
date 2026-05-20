@@ -64,6 +64,9 @@ keyboard-first.
 | Mod+/ | toggle audio output |
 | Mod+Shift+t | touchscreen calibration presets |
 
+Brightness and volume hotkeys show a short `br ...` or `vol ...` alert in the
+i3 bar.
+
 ## Power
 
 | Command | Action |

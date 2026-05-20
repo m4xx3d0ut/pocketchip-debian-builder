@@ -4,6 +4,10 @@ set -eu
 battery=/sys/class/power_supply/axp20x-battery
 usb=/sys/class/power_supply/axp20x-usb
 ac=/sys/class/power_supply/axp20x-ac
+uid="$(id -u 2>/dev/null || printf 0)"
+alert_file="/tmp/pocketchip-status-alert-$uid"
+pid_file="/tmp/pocketchip-status-$uid.pid"
+status_interval="${POCKETCHIP_STATUS_INTERVAL:-5}"
 
 color_ok='#00ff66'
 color_warn='#ffd75f'
@@ -141,7 +145,7 @@ load_status() {
 }
 
 caffeine_status() {
-  caffeine_state="/tmp/pocketchip-caffeine-$(id -u 2>/dev/null || printf 0)"
+  caffeine_state="/tmp/pocketchip-caffeine-$uid"
   if [ -e "$caffeine_state" ]; then
     text='caf on'
     color=$color_warn
@@ -155,6 +159,28 @@ caffeine_status() {
 time_status() {
   text="$(date '+%H:%M')"
   color=$color_dim
+}
+
+alert_status() {
+  text=''
+  color=$color_text
+  [ -r "$alert_file" ] || return 0
+
+  expire="$(sed -n '1p' "$alert_file" 2>/dev/null || printf 0)"
+  alert_color="$(sed -n '2p' "$alert_file" 2>/dev/null || printf '%s' "$color_warn")"
+  alert_text="$(sed -n '3p' "$alert_file" 2>/dev/null || true)"
+  now="$(date '+%s')"
+
+  case "$expire" in
+    ''|*[!0-9]*) rm -f "$alert_file"; return 0 ;;
+  esac
+  if [ "$expire" -lt "$now" ] || [ -z "$alert_text" ]; then
+    rm -f "$alert_file"
+    return 0
+  fi
+
+  text=$alert_text
+  color=$alert_color
 }
 
 json_escape() {
@@ -183,6 +209,9 @@ emit_status() {
   caffeine_status
   caffeine_text=$text
   caffeine_color=$color
+  alert_status
+  alert_text=$text
+  alert_color=$color
   time_status
   time_text=$text
   time_color=$color
@@ -200,13 +229,23 @@ emit_status() {
     json_block "$caffeine_text" "$caffeine_color"
     printf ','
   fi
+  if [ -n "$alert_text" ]; then
+    json_block "$alert_text" "$alert_color"
+    printf ','
+  fi
   json_block "$time_text" "$time_color"
   printf '],\n'
 }
+
+printf '%s\n' "$$" >"$pid_file" 2>/dev/null || true
+trap ':' USR1
 
 printf '{"version":1,"click_events":false}\n'
 printf '[\n'
 while :; do
   emit_status
-  sleep 5
+  sleep "$status_interval" &
+  sleep_pid=$!
+  wait "$sleep_pid" 2>/dev/null || true
+  kill "$sleep_pid" 2>/dev/null || true
 done
