@@ -126,7 +126,7 @@ low_lock() {
   rc=0
   rootctl low-enter
   lock_screen || rc=$?
-  rootctl cpu-restore || true
+  rootctl normal || true
   return "$rc"
 }
 
