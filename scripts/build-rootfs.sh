@@ -196,15 +196,9 @@ content_h = screen_h - top_margin
 
 image = Image.open(src).convert("RGBA")
 resampling = getattr(Image, "Resampling", Image)
-scale = min(screen_w / image.width, content_h / image.height)
-resized = image.resize(
-    (int(image.width * scale + 0.5), int(image.height * scale + 0.5)),
-    resampling.LANCZOS,
-)
+resized = image.resize((screen_w, content_h), resampling.LANCZOS)
 canvas = Image.new("RGBA", (screen_w, screen_h), (0, 0, 0, 255))
-left = max(0, (screen_w - resized.width) // 2)
-top = top_margin + max(0, (content_h - resized.height) // 2)
-canvas.alpha_composite(resized, (left, top))
+canvas.alpha_composite(resized, (0, top_margin))
 rgb = canvas.convert("RGB")
 rgb.save(png_dst, optimize=True)
 

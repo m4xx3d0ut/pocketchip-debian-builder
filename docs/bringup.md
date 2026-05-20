@@ -161,8 +161,9 @@ cat /run/pocketchip-framebuffer-splash.log
 Set `POCKETCHIP_SPLASH_IMAGE=splash.png` to copy the local asset into the image
 and generate `/usr/share/pocketchip/splash.fb`. Set
 `POCKETCHIP_SPLASH_TOP_MARGIN=14` to inset the splash slightly from the top edge
-so PocketCHIP LCD edge clipping does not cut off the artwork. Keep
-`POCKETCHIP_BOOT_SPLASH=0` for a fast login prompt. With
+so PocketCHIP LCD edge clipping does not cut off the artwork. The build
+stretches the splash to the full 480px width, matching the desktop wallpaper
+preparation. Keep `POCKETCHIP_BOOT_SPLASH=0` for a fast login prompt. With
 `POCKETCHIP_LOGIN_SPLASH=auto`, the build enables the login splash only when a
 splash image is configured. `pocketchip-splash login` paints the image on the X
 root window after a successful tty1 login and keeps it visible until i3 applies
