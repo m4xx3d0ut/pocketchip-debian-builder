@@ -39,7 +39,7 @@ need() {
 status_alert() {
   label="$1"
   alert_color="${2:-$color_dim}"
-  ttl="${3:-4}"
+  ttl="${3:-8}"
   now="$(date '+%s')"
   expire=$((now + ttl))
   tmp="$alert_file.$$"
@@ -55,6 +55,13 @@ status_alert() {
       ''|*[!0-9]*) : ;;
       *) kill -USR1 "$pid" 2>/dev/null || true ;;
     esac
+  fi
+
+  if command -v pgrep >/dev/null 2>&1; then
+    for pid in $(pgrep -u "$uid" -f '/usr/local/bin/pocketchip-status' 2>/dev/null || true); do
+      [ "$pid" != "$$" ] || continue
+      kill -USR1 "$pid" 2>/dev/null || true
+    done
   fi
 }
 

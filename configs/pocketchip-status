@@ -237,7 +237,14 @@ emit_status() {
   printf '],\n'
 }
 
+cleanup_pid_file() {
+  if [ "$(sed -n '1p' "$pid_file" 2>/dev/null || true)" = "$$" ]; then
+    rm -f "$pid_file" 2>/dev/null || true
+  fi
+}
+
 printf '%s\n' "$$" >"$pid_file" 2>/dev/null || true
+trap cleanup_pid_file EXIT
 trap ':' USR1
 
 printf '{"version":1,"click_events":false}\n'
