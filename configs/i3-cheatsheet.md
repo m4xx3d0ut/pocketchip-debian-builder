@@ -9,9 +9,10 @@ Mod is Alt on the PocketCHIP keyboard.
 - Mod+Shift+w: lightweight browser if installed
 - Mod+Left / Mod+Right: browser back/forward, otherwise workspace prev/next
 - Mod+Up / Mod+Down: browser page up/down
-- Mod+u: focus browser URL bar
+- Mod+u: focus browser URL bar, including from browser fullscreen
 - Mod+r: browser reload
-- Mod+Shift+f: browser fullscreen
+- Mod+f: fullscreen; sends browser F11 when a browser is focused
+- Mod+Shift+f: browser fullscreen alias
 - Mod+m: PocketCHIP menu
 - Mod+i: system about/support card
 - Mod+d: PocketCHIP app launcher
@@ -22,7 +23,6 @@ Mod is Alt on the PocketCHIP keyboard.
 - Mod+Shift+h/j/k/l: move window left/down/up/right
 - Mod+1..4: switch workspace
 - Mod+Shift+1..4: move window to workspace
-- Mod+f: fullscreen
 - Mod+Space: switch tiling/floating focus
 - Mod+Shift+Space: toggle floating
 - Mod+Shift+q: close window

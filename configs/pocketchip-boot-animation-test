@@ -1,0 +1,41 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+set -eu
+
+if [ -r /etc/default/pocketchip-ui ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-ui
+fi
+
+video="${POCKETCHIP_BOOT_VIDEO_PATH:-/usr/share/pocketchip/boot.mp4}"
+
+printf '[boot-animation-config]\n'
+printf 'POCKETCHIP_BOOT_ANIMATION=%s\n' "${POCKETCHIP_BOOT_ANIMATION:-0}"
+printf 'POCKETCHIP_BOOT_VIDEO_PATH=%s\n' "${POCKETCHIP_BOOT_VIDEO_PATH:-}"
+printf 'POCKETCHIP_BOOT_ANIMATION_TIMEOUT=%s\n' "${POCKETCHIP_BOOT_ANIMATION_TIMEOUT:-8}"
+
+printf '\n[video]\n'
+printf 'path=%s\n' "$video"
+if [ -r "$video" ]; then
+  printf 'readable=yes\n'
+  if command -v file >/dev/null 2>&1; then
+    file "$video" || true
+  fi
+else
+  printf 'readable=no\n'
+fi
+
+printf '\n[player]\n'
+if command -v mpv >/dev/null 2>&1; then
+  command -v mpv
+  mpv --version | sed -n '1p'
+else
+  printf 'mpv=missing\n'
+fi
+
+printf '\n[decode-test]\n'
+if [ -r "$video" ] && command -v mpv >/dev/null 2>&1; then
+  timeout 12 mpv --no-config --vo=null --ao=null --frames=1 --no-terminal "$video"
+else
+  printf 'skipped: missing video or mpv\n'
+fi

@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
 set -eu
 
 active_class() {
@@ -47,7 +48,7 @@ case "$cmd" in
     browser_active && send_key Ctrl+r
     ;;
   fullscreen)
-    browser_active && send_key F11
+    if browser_active; then send_key F11; else fallback_i3 fullscreen toggle; fi
     ;;
   menu)
     fallback_i3 exec pocketchip-menu

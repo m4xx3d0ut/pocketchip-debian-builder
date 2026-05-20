@@ -568,6 +568,7 @@ install -m 0755 "$repo_root/configs/pocketchip-menu" "$rootfs/usr/local/bin/pock
 install -m 0755 "$repo_root/configs/pocketchip-control" "$rootfs/usr/local/bin/pocketchip-control"
 install -m 0755 "$repo_root/configs/pocketchip-power" "$rootfs/usr/local/bin/pocketchip-power"
 install -m 0755 "$repo_root/configs/pocketchip-boot-animation" "$rootfs/usr/local/bin/pocketchip-boot-animation"
+install -m 0755 "$repo_root/configs/pocketchip-boot-animation-test" "$rootfs/usr/local/bin/pocketchip-boot-animation-test"
 install -m 0755 "$repo_root/configs/pocketchip-gestures" "$rootfs/usr/local/bin/pocketchip-gestures"
 install -m 0755 "$repo_root/configs/pocketchip-first-login-password" "$rootfs/usr/local/bin/pocketchip-first-login-password"
 install -d -m 0755 "$rootfs/usr/local/sbin"

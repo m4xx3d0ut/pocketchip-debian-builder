@@ -110,7 +110,7 @@ POCKETCHIP_SPECTRE_V2_MITIGATION=1
 POCKETCHIP_TOUCH_MATRIX='-1 0 1 0 -1.18 1.09 0 0 1'
 POCKETCHIP_TOUCH_OUTPUT=
 POCKETCHIP_ASSET_DIR='.local/chip-assets'
-POCKETCHIP_BG_IMAGE=bg.png
+# POCKETCHIP_BG_IMAGE=bg.png
 POCKETCHIP_BG_TOP_MARGIN=14
 # POCKETCHIP_BOOT_VIDEO=boot.mp4
 POCKETCHIP_BOOT_ANIMATION=0
@@ -137,6 +137,18 @@ temporary lab/recovery images.
 The PocketCHIP RTL8723BS radio is a 2.4 GHz Wi-Fi part. Use a 2.4 GHz SSID or a
 dual-band SSID that still accepts 2.4 GHz clients. Set
 `POCKETCHIP_WIFI_HIDDEN=1` for a hidden build-time SSID.
+
+Boot animation is intentionally optional because MP4 playback adds packages and
+startup work to a very small device. To test an enabled animation over UART:
+
+```sh
+pocketchip-boot-animation-test
+cat /tmp/pocketchip-boot-animation.log
+```
+
+Use a short, no-audio MP4 at 480x272 or smaller. Enabling
+`POCKETCHIP_BOOT_ANIMATION=1` with `POCKETCHIP_BOOT_VIDEO=boot.mp4` causes the
+builder to copy the video into the image and install `mpv` for playback.
 
 Set `POCKETCHIP_NETWORK_TIME=1` to install and enable `systemd-timesyncd` so the
 device corrects date/time after NetworkManager brings Wi-Fi online. Set it to
@@ -293,6 +305,7 @@ PocketCHIP i3 bindings:
 
 ```text
 Mod+Enter        terminal
+Mod+w            Firefox ESR
 Mod+d            PocketCHIP app launcher
 Mod+x            power menu
 Mod+Esc          screen off + password lock
@@ -301,7 +314,7 @@ Mod+h/j/k/l      focus left/down/up/right
 Mod+Shift+h/j/k/l move window left/down/up/right
 Mod+1..4         switch workspace
 Mod+Shift+1..4   move window to workspace
-Mod+f            fullscreen
+Mod+f            fullscreen; sends browser F11 when browser is focused
 Mod+Shift+Space  floating toggle
 Mod+n            Wi-Fi TUI
 Mod+b            Bluetooth TUI
@@ -309,9 +322,9 @@ Mod+Shift+n      PocketCHIP connect menu
 Mod+Shift+t      touchscreen calibration presets
 Mod+Left/Right   browser back/forward, workspace prev/next outside browser
 Mod+Up/Down      browser page up/down
-Mod+u            browser URL bar
+Mod+u            browser URL bar, including from browser fullscreen
 Mod+r            browser reload
-Mod+Shift+f      browser fullscreen toggle
+Mod+Shift+f      browser fullscreen alias
 Mod+Shift+slash  on-device cheat sheet
 ```
 
