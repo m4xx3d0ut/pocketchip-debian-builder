@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+print_defaults=0
+use_local_env=1
+for arg in "$@"; do
+  case "$arg" in
+    --print-defaults) print_defaults=1 ;;
+    --no-local-env) use_local_env=0 ;;
+    *)
+      printf 'error: unknown argument: %s\n' "$arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
 local_env="${LOCAL_ENV:-$repo_root/configs/local.env}"
-if [[ -r "$local_env" ]]; then
+if [[ "$use_local_env" == 1 && -r "$local_env" ]]; then
   set -a
   # shellcheck source=/dev/null
   . "$local_env"
@@ -17,7 +31,6 @@ security_mirror="${SECURITY_MIRROR:-http://security.debian.org/debian-security}"
 build_dir="${BUILD_DIR:-$repo_root/build}"
 rootfs="${ROOTFS:-$build_dir/rootfs-$suite-$arch}"
 packages_file="${PACKAGES_FILE:-$repo_root/configs/debian-trixie-armhf.packages}"
-default_password="${DEFAULT_PASSWORD:-chip}"
 install_oh_my_zsh="${INSTALL_OH_MY_ZSH:-1}"
 debian_keyring="${DEBIAN_KEYRING:-$build_dir/keyrings/debian-trixie-archive-keyring.gpg}"
 initramfs_modules_file="${INITRAMFS_MODULES_FILE:-$repo_root/configs/initramfs-modules}"
@@ -169,10 +182,7 @@ esac
 case "$pocketchip_root_auth" in
   locked) ;;
   password)
-    if [[ -z "$pocketchip_root_password" ]]; then
-      pocketchip_root_password="$default_password"
-    fi
-    [[ -n "$pocketchip_root_password" ]] || die "POCKETCHIP_ROOT_PASSWORD may not be empty when POCKETCHIP_ROOT_AUTH=password"
+    [[ -n "$pocketchip_root_password" ]] || die "POCKETCHIP_ROOT_PASSWORD must be set explicitly when POCKETCHIP_ROOT_AUTH=password"
     ;;
   *) die "POCKETCHIP_ROOT_AUTH must be locked or password" ;;
 esac
@@ -239,6 +249,36 @@ case "$pocketchip_first_login_password_setup" in
   0|1) ;;
   *) die "POCKETCHIP_FIRST_LOGIN_PASSWORD_SETUP must be auto, 0, or 1" ;;
 esac
+
+if [[ "$print_defaults" == 1 ]]; then
+  printf 'SUITE=%s\n' "$suite"
+  printf 'ARCH=%s\n' "$arch"
+  printf 'POCKETCHIP_IMAGE_PROFILE=%s\n' "$pocketchip_image_profile"
+  printf 'POCKETCHIP_ROOT_AUTH=%s\n' "$pocketchip_root_auth"
+  printf 'POCKETCHIP_ROOT_PASSWORD_SET=%s\n' "$([[ -n "$pocketchip_root_password" ]] && printf yes || printf no)"
+  printf 'POCKETCHIP_USER=%s\n' "$pocketchip_user"
+  printf 'POCKETCHIP_USER_PASSWORD_SET=%s\n' "$([[ -n "$pocketchip_user_password" ]] && printf yes || printf no)"
+  printf 'POCKETCHIP_AUTOLOGIN_TTY1=%s\n' "$pocketchip_autologin_tty1"
+  printf 'POCKETCHIP_BOOT_TO_I3=%s\n' "$pocketchip_boot_to_i3"
+  printf 'POCKETCHIP_FIRST_LOGIN_PASSWORD_SETUP=%s\n' "$pocketchip_first_login_password_setup"
+  printf 'POCKETCHIP_WIFI_SSID_SET=%s\n' "$([[ -n "$pocketchip_wifi_ssid" ]] && printf yes || printf no)"
+  printf 'POCKETCHIP_WIFI_PSK_SET=%s\n' "$([[ -n "$pocketchip_wifi_psk" ]] && printf yes || printf no)"
+  printf 'POCKETCHIP_WIFI_HIDDEN=%s\n' "$pocketchip_wifi_hidden"
+  printf 'POCKETCHIP_WIFI_COUNTRY=%s\n' "$pocketchip_wifi_country"
+  printf 'POCKETCHIP_BG_IMAGE=%s\n' "$pocketchip_bg_image"
+  printf 'POCKETCHIP_BOOT_VIDEO=%s\n' "$pocketchip_boot_video"
+  printf 'POCKETCHIP_BOOT_ANIMATION=%s\n' "$pocketchip_boot_animation"
+  printf 'POCKETCHIP_BROWSER=%s\n' "$pocketchip_browser"
+  printf 'POCKETCHIP_GESTURES=%s\n' "$pocketchip_gestures"
+  printf 'POCKETCHIP_DARK_MODE=%s\n' "$pocketchip_dark_mode"
+  printf 'POCKETCHIP_TIMEZONE=%s\n' "$pocketchip_timezone"
+  printf 'POCKETCHIP_NETWORK_TIME=%s\n' "$pocketchip_network_time"
+  printf 'POCKETCHIP_FIREFOX_SCALE=%s\n' "$pocketchip_firefox_scale"
+  printf 'POCKETCHIP_FIREFOX_DEFAULT_ZOOM=%s\n' "$pocketchip_firefox_default_zoom"
+  printf 'POCKETCHIP_BROWSER_FULLSCREEN=%s\n' "$pocketchip_browser_fullscreen"
+  printf 'POCKETCHIP_BROWSER_TOUCH_MODE=%s\n' "$pocketchip_browser_touch_mode"
+  exit 0
+fi
 
 bg_asset_src=""
 boot_video_asset_src=""
@@ -784,19 +824,10 @@ trap - EXIT
 
 printf '\nBuilt rootfs at %s\n' "$rootfs"
 printf 'Image profile: %s\n' "$pocketchip_image_profile"
-if [[ -n "$pocketchip_user_password" ]]; then
-  if [[ "$pocketchip_root_auth" == password ]]; then
-    printf 'Prototype credentials: root/%s and %s/%s\n' "$pocketchip_root_password" "$pocketchip_user" "$pocketchip_user_password"
-  else
-    printf 'Prototype credentials: locked root and %s/%s\n' "$pocketchip_user" "$pocketchip_user_password"
-  fi
-else
-  if [[ "$pocketchip_root_auth" == password ]]; then
-    printf 'Prototype credentials: root/%s and passwordless %s first-login setup\n' "$pocketchip_root_password" "$pocketchip_user"
-  else
-    printf 'Prototype credentials: locked root and passwordless %s first-login setup\n' "$pocketchip_user"
-  fi
-fi
+printf 'Root auth: %s\n' "$pocketchip_root_auth"
+printf 'Root password set: %s\n' "$([[ -n "$pocketchip_root_password" ]] && printf yes || printf no)"
+printf 'User: %s\n' "$pocketchip_user"
+printf 'User password set: %s\n' "$([[ -n "$pocketchip_user_password" ]] && printf yes || printf no)"
 printf 'TTY1 autologin: %s\n' "$pocketchip_autologin_tty1"
 printf 'Boot to i3: %s\n' "$pocketchip_boot_to_i3"
 printf 'First-login password setup: %s\n' "$pocketchip_first_login_password_setup"
