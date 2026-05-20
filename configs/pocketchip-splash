@@ -1,0 +1,68 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+set -eu
+
+if [ -r /etc/default/pocketchip-ui ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-ui
+fi
+
+mode="${1:-desktop}"
+log_file="${POCKETCHIP_SPLASH_LOG:-/tmp/pocketchip-splash.log}"
+: >>"$log_file" 2>/dev/null || log_file=/dev/null
+
+log() {
+  printf '%s\n' "$*" >>"$log_file" 2>/dev/null || true
+}
+
+set_background() {
+  path="$1"
+  label="$2"
+
+  if [ -z "$path" ]; then
+    log "$label path is empty"
+    return 0
+  fi
+  if [ ! -r "$path" ]; then
+    log "$label not readable: $path"
+    return 0
+  fi
+  if ! command -v feh >/dev/null 2>&1; then
+    log "feh not installed"
+    return 0
+  fi
+
+  feh --bg-fill "$path" >>"$log_file" 2>&1 && log "$label set: $path"
+}
+
+case "$mode" in
+  boot)
+    log "boot splash is handled by pocketchip-framebuffer-splash.service"
+    ;;
+  login)
+    if [ "${POCKETCHIP_LOGIN_SPLASH:-0}" != 1 ]; then
+      log "login splash disabled"
+      exit 0
+    fi
+    set_background "${POCKETCHIP_SPLASH_IMAGE_PATH:-/usr/share/pocketchip/splash.png}" "login splash"
+    ;;
+  desktop)
+    desktop_path="${POCKETCHIP_BG_IMAGE_PATH:-}"
+    if [ -z "$desktop_path" ] && [ -r /usr/share/pocketchip/bg.png ]; then
+      desktop_path=/usr/share/pocketchip/bg.png
+    fi
+    set_background "$desktop_path" "desktop background"
+    ;;
+  status)
+    printf 'POCKETCHIP_BOOT_SPLASH=%s\n' "${POCKETCHIP_BOOT_SPLASH:-0}"
+    printf 'POCKETCHIP_LOGIN_SPLASH=%s\n' "${POCKETCHIP_LOGIN_SPLASH:-0}"
+    printf 'POCKETCHIP_SPLASH_TOP_MARGIN=%s\n' "${POCKETCHIP_SPLASH_TOP_MARGIN:-0}"
+    printf 'POCKETCHIP_SPLASH_IMAGE_PATH=%s\n' "${POCKETCHIP_SPLASH_IMAGE_PATH:-}"
+    printf 'POCKETCHIP_SPLASH_FB_PATH=%s\n' "${POCKETCHIP_SPLASH_FB_PATH:-}"
+    printf 'POCKETCHIP_BG_IMAGE_PATH=%s\n' "${POCKETCHIP_BG_IMAGE_PATH:-}"
+    ;;
+  *)
+    printf 'usage: pocketchip-splash [desktop|boot|login|status]\n' >&2
+    exit 2
+    ;;
+esac

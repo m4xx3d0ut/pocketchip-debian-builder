@@ -46,6 +46,15 @@ if compgen -G 'scripts/*.py' >/dev/null; then
 fi
 printf 'ok\n'
 
+section "boot splash guard"
+old_splash_refs="$(git grep -n -I -E 'POCKETCHIP_BOOT_ANIMATION|pocketchip-boot-animation|boot[.]mp4' -- configs scripts docs README.md Makefile || true)"
+old_splash_refs="$(printf '%s\n' "$old_splash_refs" | grep -Ev '^scripts/publish-check[.]sh:' || true)"
+if [[ -n "$old_splash_refs" ]]; then
+  printf '%s\n' "$old_splash_refs" >&2
+  fail "old boot animation references remain"
+fi
+printf 'ok\n'
+
 section "sudoers syntax"
 if command -v visudo >/dev/null 2>&1; then
   for file in configs/sudoers-*; do
@@ -68,8 +77,13 @@ grep -qx 'POCKETCHIP_USER_PASSWORD_SET=no' <<<"$defaults" || fail "user password
 grep -qx 'POCKETCHIP_WIFI_SSID_SET=no' <<<"$defaults" || fail "Wi-Fi SSID is set by default"
 grep -qx 'POCKETCHIP_WIFI_PSK_SET=no' <<<"$defaults" || fail "Wi-Fi PSK is set by default"
 grep -qx 'POCKETCHIP_BG_IMAGE=' <<<"$defaults" || fail "wallpaper asset is required by default"
-grep -qx 'POCKETCHIP_BOOT_VIDEO=' <<<"$defaults" || fail "boot video asset is required by default"
-grep -qx 'POCKETCHIP_BOOT_ANIMATION=0' <<<"$defaults" || fail "boot animation is enabled by default"
+grep -qx 'POCKETCHIP_BG_TOP_MARGIN=0' <<<"$defaults" || fail "wallpaper top margin is nonzero by default"
+grep -qx 'POCKETCHIP_SPLASH_IMAGE=' <<<"$defaults" || fail "splash asset is required by default"
+grep -qx 'POCKETCHIP_SPLASH_TOP_MARGIN=0' <<<"$defaults" || fail "splash top margin is nonzero by default"
+grep -qx 'POCKETCHIP_BOOT_SPLASH=0' <<<"$defaults" || fail "boot splash is enabled by default"
+grep -qx 'POCKETCHIP_BOOT_SPLASH_HOLD=0' <<<"$defaults" || fail "boot splash hold is enabled by default"
+grep -qx 'POCKETCHIP_LOGIN_SPLASH=0' <<<"$defaults" || fail "login splash is enabled by default"
+grep -qx 'POCKETCHIP_LOGIN_SPLASH_HOLD=0' <<<"$defaults" || fail "login splash hold is enabled by default"
 grep -qx 'POCKETCHIP_DARK_MODE=1' <<<"$defaults" || fail "dark mode is not enabled by default"
 grep -qx 'POCKETCHIP_NETWORK_TIME=1' <<<"$defaults" || fail "network time is not enabled by default"
 

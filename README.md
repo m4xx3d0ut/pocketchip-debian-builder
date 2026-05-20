@@ -54,11 +54,16 @@ credentials, or a root password. The default root account is locked, the default
 user is `chip`, and first-boot direct i3 setup prompts for a user password before
 disabling tty1 autologin.
 
+Personal wallpaper and splash files belong under `.local/chip-assets/`, which is
+also gitignored. The repo documents the build options, but does not ship private
+or project-specific artwork.
+
 The build supports image profile, account, Wi-Fi, display/touch, browser, power,
 time, and optional asset knobs documented in `configs/local.env.example` and
 `docs/bringup.md`. Use `POCKETCHIP_ROOT_AUTH=password` plus
 `POCKETCHIP_ROOT_PASSWORD=...` only for intentional lab/recovery images.
-Boot MP4 playback is optional and disabled by default.
+The optional splash path uses static images; video boot animation support is
+intentionally not included.
 
 On Debian/Ubuntu hosts, the expected dependencies are:
 

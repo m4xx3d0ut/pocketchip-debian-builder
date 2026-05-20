@@ -13,7 +13,10 @@ fi
 [ -r "$HOME/.Xresources" ] && xrdb -merge "$HOME/.Xresources"
 [ -r "$HOME/.Xmodmap" ] && xmodmap "$HOME/.Xmodmap"
 
-[ -x /usr/local/bin/pocketchip-boot-animation ] && pocketchip-boot-animation
+if [ "${POCKETCHIP_LOGIN_SPLASH:-0}" = 1 ] &&
+   [ -x /usr/local/bin/pocketchip-splash ]; then
+  pocketchip-splash login
+fi
 
 xset s 600 600 2>/dev/null || true
 xset +dpms 2>/dev/null || true

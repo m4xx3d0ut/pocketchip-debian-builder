@@ -1,0 +1,13 @@
+[Unit]
+Description=Paint PocketCHIP framebuffer boot splash
+After=local-fs.target systemd-udevd.service systemd-udev-trigger.service systemd-tmpfiles-setup.service
+After=systemd-backlight@backlight:backlight.service systemd-user-sessions.service
+Before=getty@tty1.service display-manager.service
+ConditionPathExists=/usr/share/pocketchip/splash.fb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/pocketchip-framebuffer-splash paint
+
+[Install]
+WantedBy=multi-user.target

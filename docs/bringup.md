@@ -90,7 +90,9 @@ Expected first-pass outcomes:
 
 The rootfs and U-Boot build scripts read `configs/local.env` when it exists.
 That file is gitignored and is the intended place for throwaway prototype
-credentials, local Wi-Fi credentials, and local build toggles.
+credentials, local Wi-Fi credentials, local artwork names, and local build
+toggles. Keep personal assets under `.local/chip-assets/`; `.local/` is
+gitignored, so release source only carries the documented options.
 
 Useful knobs:
 
@@ -112,8 +114,12 @@ POCKETCHIP_TOUCH_OUTPUT=
 POCKETCHIP_ASSET_DIR='.local/chip-assets'
 # POCKETCHIP_BG_IMAGE=bg.png
 POCKETCHIP_BG_TOP_MARGIN=14
-# POCKETCHIP_BOOT_VIDEO=boot.mp4
-POCKETCHIP_BOOT_ANIMATION=0
+# POCKETCHIP_SPLASH_IMAGE=splash.png
+POCKETCHIP_SPLASH_TOP_MARGIN=14
+POCKETCHIP_BOOT_SPLASH=0
+POCKETCHIP_BOOT_SPLASH_HOLD=0
+POCKETCHIP_LOGIN_SPLASH=auto
+POCKETCHIP_LOGIN_SPLASH_HOLD=0
 POCKETCHIP_BROWSER=firefox-esr
 POCKETCHIP_GESTURES=1
 POCKETCHIP_DARK_MODE=1
@@ -138,17 +144,31 @@ The PocketCHIP RTL8723BS radio is a 2.4 GHz Wi-Fi part. Use a 2.4 GHz SSID or a
 dual-band SSID that still accepts 2.4 GHz clients. Set
 `POCKETCHIP_WIFI_HIDDEN=1` for a hidden build-time SSID.
 
-Boot animation is intentionally optional because MP4 playback adds packages and
-startup work to a very small device. To test an enabled animation over UART:
+The optional splash is a static image loaded from `POCKETCHIP_ASSET_DIR`, usually
+`.local/chip-assets/splash.png`. The source image is local artwork and should
+not be committed. The default image does not paint a splash before login, so the
+tty login prompt appears as soon as the system is ready. It is intentionally not
+an MP4 animation because video playback adds a large package stack and proved
+unreliable on this device. To check the configured splash from a shell:
 
 ```sh
-pocketchip-boot-animation-test
-cat /tmp/pocketchip-boot-animation.log
+sudo pocketchip-framebuffer-splash status
+sudo pocketchip-framebuffer-splash paint
+pocketchip-splash status
+cat /run/pocketchip-framebuffer-splash.log
 ```
 
-Use a short, no-audio MP4 at 480x272 or smaller. Enabling
-`POCKETCHIP_BOOT_ANIMATION=1` with `POCKETCHIP_BOOT_VIDEO=boot.mp4` causes the
-builder to copy the video into the image and install `mpv` for playback.
+Set `POCKETCHIP_SPLASH_IMAGE=splash.png` to copy the local asset into the image
+and generate `/usr/share/pocketchip/splash.fb`. Set
+`POCKETCHIP_SPLASH_TOP_MARGIN=14` to inset the splash slightly from the top edge
+so PocketCHIP LCD edge clipping does not cut off the artwork. Keep
+`POCKETCHIP_BOOT_SPLASH=0` for a fast login prompt. With
+`POCKETCHIP_LOGIN_SPLASH=auto`, the build enables the login splash only when a
+splash image is configured. `pocketchip-splash login` paints the image on the X
+root window after a successful tty1 login and keeps it visible until i3 applies
+the desktop background. Leave
+`POCKETCHIP_LOGIN_SPLASH_HOLD=0` unless you intentionally want to delay X/i3
+startup after login.
 
 Set `POCKETCHIP_NETWORK_TIME=1` to install and enable `systemd-timesyncd` so the
 device corrects date/time after NetworkManager brings Wi-Fi online. Set it to

@@ -77,7 +77,7 @@ bindsym $mod+comma exec pocketchip-control volume-down
 bindsym $mod+slash exec pocketchip-control volume-mute
 
 exec --no-startup-id pocketchip-touch-calibrate apply
-exec --no-startup-id sh -lc '[ -r /usr/share/pocketchip/bg.png ] && feh --bg-scale /usr/share/pocketchip/bg.png'
+exec --no-startup-id pocketchip-splash desktop
 exec --no-startup-id pocketchip-gestures
 exec --no-startup-id sh -lc 'pocketchip-first-login-password --needed && xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 -geometry 74x14 -e pocketchip-first-login-password || true'
 exec --no-startup-id xsetroot -cursor_name crosshair

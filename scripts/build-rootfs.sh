@@ -55,8 +55,12 @@ pocketchip_first_login_password_setup="${POCKETCHIP_FIRST_LOGIN_PASSWORD_SETUP:-
 pocketchip_asset_dir="${POCKETCHIP_ASSET_DIR:-$repo_root/.local/chip-assets}"
 pocketchip_bg_image="${POCKETCHIP_BG_IMAGE:-}"
 pocketchip_bg_top_margin="${POCKETCHIP_BG_TOP_MARGIN:-0}"
-pocketchip_boot_video="${POCKETCHIP_BOOT_VIDEO:-}"
-pocketchip_boot_animation="${POCKETCHIP_BOOT_ANIMATION:-0}"
+pocketchip_splash_image="${POCKETCHIP_SPLASH_IMAGE:-}"
+pocketchip_splash_top_margin="${POCKETCHIP_SPLASH_TOP_MARGIN:-$pocketchip_bg_top_margin}"
+pocketchip_boot_splash="${POCKETCHIP_BOOT_SPLASH:-0}"
+pocketchip_boot_splash_hold="${POCKETCHIP_BOOT_SPLASH_HOLD:-0}"
+pocketchip_login_splash="${POCKETCHIP_LOGIN_SPLASH:-auto}"
+pocketchip_login_splash_hold="${POCKETCHIP_LOGIN_SPLASH_HOLD:-0}"
 pocketchip_browser="${POCKETCHIP_BROWSER:-firefox-esr}"
 pocketchip_gestures="${POCKETCHIP_GESTURES:-1}"
 pocketchip_dark_mode="${POCKETCHIP_DARK_MODE:-1}"
@@ -174,6 +178,52 @@ PY
   chmod 0644 "$dst"
 }
 
+install_splash_images() {
+  local src="$1"
+  local png_dst="$2"
+  local fb_dst="$3"
+  local top_margin="$4"
+
+  python3 - "$src" "$png_dst" "$fb_dst" "$top_margin" <<'PY'
+import sys
+from PIL import Image
+
+src, png_dst, fb_dst, top_margin = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+screen_w, screen_h = 480, 272
+if top_margin >= screen_h:
+    raise SystemExit("top margin is too large for 480x272")
+content_h = screen_h - top_margin
+
+image = Image.open(src).convert("RGBA")
+resampling = getattr(Image, "Resampling", Image)
+scale = min(screen_w / image.width, content_h / image.height)
+resized = image.resize(
+    (int(image.width * scale + 0.5), int(image.height * scale + 0.5)),
+    resampling.LANCZOS,
+)
+canvas = Image.new("RGBA", (screen_w, screen_h), (0, 0, 0, 255))
+left = max(0, (screen_w - resized.width) // 2)
+top = top_margin + max(0, (content_h - resized.height) // 2)
+canvas.alpha_composite(resized, (left, top))
+rgb = canvas.convert("RGB")
+rgb.save(png_dst, optimize=True)
+
+source = rgb.tobytes()
+raw = bytearray(screen_w * screen_h * 4)
+for index in range(screen_w * screen_h):
+    src_i = index * 3
+    dst_i = index * 4
+    raw[dst_i] = source[src_i + 2]
+    raw[dst_i + 1] = source[src_i + 1]
+    raw[dst_i + 2] = source[src_i]
+    raw[dst_i + 3] = 0
+
+with open(fb_dst, "wb") as out:
+    out.write(raw)
+PY
+  chmod 0644 "$png_dst" "$fb_dst"
+}
+
 validate_linux_user "$pocketchip_user"
 case "$pocketchip_image_profile" in
   balanced|minimal|full) ;;
@@ -198,10 +248,12 @@ reject_newline POCKETCHIP_TOUCH_OUTPUT "$pocketchip_touch_output"
 reject_newline POCKETCHIP_ASSET_DIR "$pocketchip_asset_dir"
 reject_newline POCKETCHIP_BG_IMAGE "$pocketchip_bg_image"
 validate_nonnegative_int POCKETCHIP_BG_TOP_MARGIN "$pocketchip_bg_top_margin"
-reject_newline POCKETCHIP_BOOT_VIDEO "$pocketchip_boot_video"
+reject_newline POCKETCHIP_SPLASH_IMAGE "$pocketchip_splash_image"
+validate_nonnegative_int POCKETCHIP_SPLASH_TOP_MARGIN "$pocketchip_splash_top_margin"
+validate_nonnegative_int POCKETCHIP_BOOT_SPLASH_HOLD "$pocketchip_boot_splash_hold"
+validate_nonnegative_int POCKETCHIP_LOGIN_SPLASH_HOLD "$pocketchip_login_splash_hold"
 reject_newline POCKETCHIP_BROWSER "$pocketchip_browser"
 validate_bool POCKETCHIP_BOOT_TO_I3 "$pocketchip_boot_to_i3"
-validate_bool POCKETCHIP_BOOT_ANIMATION "$pocketchip_boot_animation"
 validate_bool POCKETCHIP_GESTURES "$pocketchip_gestures"
 validate_bool POCKETCHIP_DARK_MODE "$pocketchip_dark_mode"
 validate_bool POCKETCHIP_NETWORK_TIME "$pocketchip_network_time"
@@ -220,9 +272,32 @@ esac
 case "$pocketchip_timezone" in
   /*|*..*|"") die "POCKETCHIP_TIMEZONE must be a relative zoneinfo name" ;;
 esac
+case "$pocketchip_boot_splash" in
+  auto|0|1) ;;
+  *) die "POCKETCHIP_BOOT_SPLASH must be auto, 0, or 1" ;;
+esac
+case "$pocketchip_login_splash" in
+  auto|0|1) ;;
+  *) die "POCKETCHIP_LOGIN_SPLASH must be auto, 0, or 1" ;;
+esac
 
 if [[ "$pocketchip_asset_dir" != /* ]]; then
   pocketchip_asset_dir="$repo_root/$pocketchip_asset_dir"
+fi
+
+if [[ "$pocketchip_boot_splash" == auto ]]; then
+  if [[ -n "$pocketchip_splash_image" ]]; then
+    pocketchip_boot_splash=1
+  else
+    pocketchip_boot_splash=0
+  fi
+fi
+if [[ "$pocketchip_login_splash" == auto ]]; then
+  if [[ -n "$pocketchip_splash_image" ]]; then
+    pocketchip_login_splash=1
+  else
+    pocketchip_login_splash=0
+  fi
 fi
 
 if [[ "$pocketchip_autologin_tty1" == auto ]]; then
@@ -266,8 +341,13 @@ if [[ "$print_defaults" == 1 ]]; then
   printf 'POCKETCHIP_WIFI_HIDDEN=%s\n' "$pocketchip_wifi_hidden"
   printf 'POCKETCHIP_WIFI_COUNTRY=%s\n' "$pocketchip_wifi_country"
   printf 'POCKETCHIP_BG_IMAGE=%s\n' "$pocketchip_bg_image"
-  printf 'POCKETCHIP_BOOT_VIDEO=%s\n' "$pocketchip_boot_video"
-  printf 'POCKETCHIP_BOOT_ANIMATION=%s\n' "$pocketchip_boot_animation"
+  printf 'POCKETCHIP_BG_TOP_MARGIN=%s\n' "$pocketchip_bg_top_margin"
+  printf 'POCKETCHIP_SPLASH_IMAGE=%s\n' "$pocketchip_splash_image"
+  printf 'POCKETCHIP_SPLASH_TOP_MARGIN=%s\n' "$pocketchip_splash_top_margin"
+  printf 'POCKETCHIP_BOOT_SPLASH=%s\n' "$pocketchip_boot_splash"
+  printf 'POCKETCHIP_BOOT_SPLASH_HOLD=%s\n' "$pocketchip_boot_splash_hold"
+  printf 'POCKETCHIP_LOGIN_SPLASH=%s\n' "$pocketchip_login_splash"
+  printf 'POCKETCHIP_LOGIN_SPLASH_HOLD=%s\n' "$pocketchip_login_splash_hold"
   printf 'POCKETCHIP_BROWSER=%s\n' "$pocketchip_browser"
   printf 'POCKETCHIP_GESTURES=%s\n' "$pocketchip_gestures"
   printf 'POCKETCHIP_DARK_MODE=%s\n' "$pocketchip_dark_mode"
@@ -281,7 +361,7 @@ if [[ "$print_defaults" == 1 ]]; then
 fi
 
 bg_asset_src=""
-boot_video_asset_src=""
+splash_asset_src=""
 if [[ -n "$pocketchip_bg_image" ]]; then
   bg_asset_src="$(resolve_asset POCKETCHIP_BG_IMAGE "$pocketchip_bg_image")"
   if (( pocketchip_bg_top_margin > 0 )); then
@@ -290,8 +370,12 @@ import PIL.Image
 PY
   fi
 fi
-if [[ -n "$pocketchip_boot_video" ]]; then
-  boot_video_asset_src="$(resolve_asset POCKETCHIP_BOOT_VIDEO "$pocketchip_boot_video")"
+if [[ "$pocketchip_boot_splash" == 1 || "$pocketchip_login_splash" == 1 ]]; then
+  [[ -n "$pocketchip_splash_image" ]] || die "POCKETCHIP_SPLASH_IMAGE must be set when a splash mode is enabled"
+  splash_asset_src="$(resolve_asset POCKETCHIP_SPLASH_IMAGE "$pocketchip_splash_image")"
+  python3 - <<'PY' || die "POCKETCHIP_SPLASH_IMAGE requires python3 Pillow; install python3-pil"
+import PIL.Image
+PY
 fi
 
 if [[ -n "$pocketchip_wifi_ssid" || -n "$pocketchip_wifi_psk" ]]; then
@@ -353,22 +437,18 @@ build_package_csv() {
   case "$pocketchip_image_profile" in
     minimal)
       remove=(
-        bluez-tools btscanner firefox-esr gpiod iperf3 mesa-utils minicom mpv
+        bluez-tools btscanner firefox-esr gpiod iperf3 mesa-utils minicom
         mtr-tiny nmap netsurf-gtk python3-libgpiod ser2net spi-tools tcpdump
         traceroute vim-tiny wavemon xdotool
       )
       ;;
     full)
-      append=(btscanner minicom mpv mesa-utils netsurf-gtk ser2net vim-tiny)
+      append=(btscanner minicom mesa-utils netsurf-gtk ser2net vim-tiny)
       ;;
   esac
 
   if [[ "$pocketchip_browser_touch_mode" == gestures ]]; then
     append+=(xdotool)
-  fi
-
-  if [[ "$pocketchip_boot_animation" == 1 && -n "$pocketchip_boot_video" ]]; then
-    append+=(mpv)
   fi
 
   if [[ "$pocketchip_network_time" == 1 ]]; then
@@ -567,24 +647,26 @@ install -m 0755 "$repo_root/configs/pocketchip-browser-action" "$rootfs/usr/loca
 install -m 0755 "$repo_root/configs/pocketchip-menu" "$rootfs/usr/local/bin/pocketchip-menu"
 install -m 0755 "$repo_root/configs/pocketchip-control" "$rootfs/usr/local/bin/pocketchip-control"
 install -m 0755 "$repo_root/configs/pocketchip-power" "$rootfs/usr/local/bin/pocketchip-power"
-install -m 0755 "$repo_root/configs/pocketchip-boot-animation" "$rootfs/usr/local/bin/pocketchip-boot-animation"
-install -m 0755 "$repo_root/configs/pocketchip-boot-animation-test" "$rootfs/usr/local/bin/pocketchip-boot-animation-test"
+install -m 0755 "$repo_root/configs/pocketchip-splash" "$rootfs/usr/local/bin/pocketchip-splash"
 install -m 0755 "$repo_root/configs/pocketchip-gestures" "$rootfs/usr/local/bin/pocketchip-gestures"
 install -m 0755 "$repo_root/configs/pocketchip-first-login-password" "$rootfs/usr/local/bin/pocketchip-first-login-password"
 install -d -m 0755 "$rootfs/usr/local/sbin"
 install -m 0755 "$repo_root/configs/pocketchip-disable-autologin" "$rootfs/usr/local/sbin/pocketchip-disable-autologin"
 install -m 0755 "$repo_root/configs/pocketchip-power-root" "$rootfs/usr/local/sbin/pocketchip-power-root"
+install -m 0755 "$repo_root/configs/pocketchip-framebuffer-splash" "$rootfs/usr/local/sbin/pocketchip-framebuffer-splash"
 
 install -d -m 0755 "$rootfs/usr/share/pocketchip"
 bg_image_path=""
-boot_video_path=""
+splash_image_path=""
+splash_fb_path=""
 if [[ -n "$bg_asset_src" ]]; then
   bg_image_path=/usr/share/pocketchip/bg.png
   install_wallpaper "$bg_asset_src" "$rootfs$bg_image_path" "$pocketchip_bg_top_margin"
 fi
-if [[ "$pocketchip_boot_animation" == 1 && -n "$boot_video_asset_src" ]]; then
-  boot_video_path=/usr/share/pocketchip/boot.mp4
-  install -m 0644 "$boot_video_asset_src" "$rootfs$boot_video_path"
+if [[ "$pocketchip_boot_splash" == 1 || "$pocketchip_login_splash" == 1 ]]; then
+  splash_image_path=/usr/share/pocketchip/splash.png
+  splash_fb_path=/usr/share/pocketchip/splash.fb
+  install_splash_images "$splash_asset_src" "$rootfs$splash_image_path" "$rootfs$splash_fb_path" "$pocketchip_splash_top_margin"
 fi
 
 install -d -m 0755 "$rootfs/usr/share/doc/pocketchip"
@@ -611,8 +693,14 @@ install -d -m 0755 "$rootfs/etc/default"
   write_shell_var POCKETCHIP_FIRST_LOGIN_PASSWORD_SETUP "$pocketchip_first_login_password_setup"
   write_shell_var POCKETCHIP_BG_IMAGE_PATH "$bg_image_path"
   write_shell_var POCKETCHIP_BG_TOP_MARGIN "$pocketchip_bg_top_margin"
-  write_shell_var POCKETCHIP_BOOT_VIDEO_PATH "$boot_video_path"
-  write_shell_var POCKETCHIP_BOOT_ANIMATION "$pocketchip_boot_animation"
+  write_shell_var POCKETCHIP_SPLASH_IMAGE_PATH "$splash_image_path"
+  write_shell_var POCKETCHIP_SPLASH_TOP_MARGIN "$pocketchip_splash_top_margin"
+  write_shell_var POCKETCHIP_SPLASH_FB_PATH "$splash_fb_path"
+  write_shell_var POCKETCHIP_SPLASH_FB_SIZE "522240"
+  write_shell_var POCKETCHIP_BOOT_SPLASH "$pocketchip_boot_splash"
+  write_shell_var POCKETCHIP_BOOT_SPLASH_HOLD "$pocketchip_boot_splash_hold"
+  write_shell_var POCKETCHIP_LOGIN_SPLASH "$pocketchip_login_splash"
+  write_shell_var POCKETCHIP_LOGIN_SPLASH_HOLD "$pocketchip_login_splash_hold"
   write_shell_var POCKETCHIP_BROWSER "$pocketchip_browser"
   write_shell_var POCKETCHIP_GESTURES "$pocketchip_gestures"
   write_shell_var POCKETCHIP_DARK_MODE "$pocketchip_dark_mode"
@@ -653,6 +741,11 @@ swap-priority = 100
 EOF
 
 install -d -m 0755 "$rootfs/etc/systemd/system"
+install -m 0644 "$repo_root/configs/pocketchip-framebuffer-splash.service" "$rootfs/etc/systemd/system/pocketchip-framebuffer-splash.service"
+if [[ "$pocketchip_boot_splash" == 1 ]]; then
+  install -d -m 0755 "$rootfs/etc/systemd/system/multi-user.target.wants"
+  ln -sfn ../pocketchip-framebuffer-splash.service "$rootfs/etc/systemd/system/multi-user.target.wants/pocketchip-framebuffer-splash.service"
+fi
 if [[ "$pocketchip_network_time" == 1 ]]; then
   install -d -m 0755 "$rootfs/etc/systemd/system/sysinit.target.wants"
   if [[ -e "$rootfs/usr/lib/systemd/system/systemd-timesyncd.service" ]]; then
@@ -839,4 +932,5 @@ printf 'Gestures: %s\n' "$pocketchip_gestures"
 printf 'Timezone: %s\n' "$pocketchip_timezone"
 printf 'Network time: %s\n' "$pocketchip_network_time"
 printf 'Wi-Fi hidden profile: %s\n' "$pocketchip_wifi_hidden"
-printf 'Boot animation: %s\n' "$pocketchip_boot_animation"
+printf 'Boot splash: %s\n' "$pocketchip_boot_splash"
+printf 'Splash framebuffer: %s\n' "$splash_fb_path"
