@@ -3,10 +3,14 @@ apt-transport-https
 ca-certificates
 dbus
 initramfs-tools
+kbd
 kmod
 locales
+mtd-utils
 sudo
 systemd
+systemd-zram-generator
+tzdata
 udev
 
 # Kernel, boot, firmware
@@ -18,45 +22,80 @@ u-boot-tools
 wireless-regdb
 
 # Network and device diagnostics
+autossh
 bluez
+bluez-tools
 curl
 dnsutils
 ethtool
 evtest
+fbset
+file
 htop
 i2c-tools
+iperf3
 iproute2
 iputils-ping
+iw
 jq
 less
+gpiod
 lsof
+mosh
+mtr-tiny
 net-tools
 network-manager
+ncdu
+nmap
 openssh-client
 openssh-server
+polkitd
 psmisc
+python3-libgpiod
 rfkill
 ripgrep
+rsync
+screen
+socat
+spi-tools
+strace
+tcpdump
+tio
+traceroute
+tree
+unzip
 usbutils
-vim-tiny
+wavemon
+wireless-tools
 wpasupplicant
+busybox-static
+xdotool
 
 # Pocket terminal workflow
 git
 neovim
 tmux
 zsh
+zsh-autosuggestions
+zsh-syntax-highlighting
 
 # Audio/display/desktop
 alsa-utils
-fonts-dejavu-core
+brightnessctl
 dmenu
+feh
+firefox-esr
+fonts-dejavu-core
+i3lock
 i3-wm
 i3status
-mesa-utils
+lisgd
+libinput-tools
 upower
 x11-xserver-utils
 xinit
+xinput
+xss-lock
 xserver-xorg-core
 xserver-xorg-input-libinput
 xterm

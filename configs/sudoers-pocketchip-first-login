@@ -1,0 +1,4 @@
+%pocketchip-setup ALL=(root) NOPASSWD: /usr/local/sbin/pocketchip-disable-autologin
+%pocketchip-setup ALL=(root) NOPASSWD: /usr/local/sbin/pocketchip-disable-autologin *
+%sudo ALL=(root) NOPASSWD: /usr/local/sbin/pocketchip-disable-autologin
+%sudo ALL=(root) NOPASSWD: /usr/local/sbin/pocketchip-disable-autologin *

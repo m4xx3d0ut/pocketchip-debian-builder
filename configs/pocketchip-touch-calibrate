@@ -1,0 +1,279 @@
+#!/bin/sh
+set -eu
+
+if [ -r /etc/default/pocketchip-touch ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-touch
+fi
+
+device="${POCKETCHIP_TOUCH_DEVICE:-1c25000.rtp}"
+output="${POCKETCHIP_TOUCH_OUTPUT:-}"
+
+matrix_for() {
+  case "$1" in
+    apply|stylus) printf '%s\n' "${POCKETCHIP_TOUCH_MATRIX:--1 0 1 0 -1.18 1.09 0 0 1}" ;;
+    edge-fit) printf '%s\n' '-1 0 1 0 -1.18 1.09 0 0 1' ;;
+    identity) printf '%s\n' '1 0 0 0 1 0 0 0 1' ;;
+    invert-x) printf '%s\n' '-1 0 1 0 1 0 0 0 1' ;;
+    invert-y) printf '%s\n' '1 0 0 0 -1 1 0 0 1' ;;
+    invert-xy|rotate-180) printf '%s\n' '-1 0 1 0 -1 1 0 0 1' ;;
+    edge-fit-x) printf '%s\n' '-1.10 0 1.05 0 -1 1 0 0 1' ;;
+    edge-fit-y) printf '%s\n' '-1 0 1 0 -1.18 1.09 0 0 1' ;;
+    edge-fit-strong) printf '%s\n' '-1.10 0 1.05 0 -1.24 1.12 0 0 1' ;;
+    swap-xy) printf '%s\n' '0 1 0 1 0 0 0 0 1' ;;
+    swap-xy-invert-x) printf '%s\n' '0 1 0 -1 0 1 0 0 1' ;;
+    swap-xy-invert-y) printf '%s\n' '0 -1 1 1 0 0 0 0 1' ;;
+    *) return 1 ;;
+  esac
+}
+
+choose_preset() {
+  cat <<'EOF'
+PocketCHIP touch presets
+
+1 stylus/default (edge-fit)
+2 identity
+3 invert-x
+4 invert-y
+5 invert-xy
+6 edge-fit-x
+7 edge-fit-y
+8 edge-fit-strong
+9 swap-xy
+10 swap-xy-invert-x
+11 swap-xy-invert-y
+12 learn-edges
+13 status
+
+Choose a preset number:
+EOF
+  read -r choice
+  case "$choice" in
+    1) printf '%s\n' stylus ;;
+    2) printf '%s\n' identity ;;
+    3) printf '%s\n' invert-x ;;
+    4) printf '%s\n' invert-y ;;
+    5) printf '%s\n' invert-xy ;;
+    6) printf '%s\n' edge-fit-x ;;
+    7) printf '%s\n' edge-fit-y ;;
+    8) printf '%s\n' edge-fit-strong ;;
+    9) printf '%s\n' swap-xy ;;
+    10) printf '%s\n' swap-xy-invert-x ;;
+    11) printf '%s\n' swap-xy-invert-y ;;
+    12) printf '%s\n' learn-edges ;;
+    13) printf '%s\n' status ;;
+    *) printf 'invalid choice\n' >&2; exit 2 ;;
+  esac
+}
+
+event_device() {
+  awk -v wanted="$device" '
+    /^N: Name="/ {
+      active = ($0 ~ wanted)
+    }
+    active && /^H: Handlers=/ {
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^event[0-9]+$/) {
+          print "/dev/input/" $i
+          exit
+        }
+      }
+    }
+  ' /proc/bus/input/devices 2>/dev/null || true
+}
+
+capture_edge() {
+  label="$1"
+  event="$2"
+  out="$3"
+  cat <<EOF
+
+Touch and hold the $label edge for 3 seconds, then release.
+Press Enter when ready.
+EOF
+  read -r _ || true
+  printf 'BEGIN %s\n' "$label" >> "$out"
+  timeout 5 evtest "$event" 2>/dev/null | awk '
+    /Event code 0 \(ABS_X\)/ { axis = "x"; next }
+    /Event code 1 \(ABS_Y\)/ { axis = "y"; next }
+    axis == "x" && /^[[:space:]]*Min[[:space:]]+/ { print "ABS_X_MIN " $2; next }
+    axis == "x" && /^[[:space:]]*Max[[:space:]]+/ { print "ABS_X_MAX " $2; next }
+    axis == "y" && /^[[:space:]]*Min[[:space:]]+/ { print "ABS_Y_MIN " $2; next }
+    axis == "y" && /^[[:space:]]*Max[[:space:]]+/ { print "ABS_Y_MAX " $2; next }
+    /type 3 \(EV_ABS\), code 0 \(ABS_X\), value/ { print "X " $NF; next }
+    /type 3 \(EV_ABS\), code 1 \(ABS_Y\), value/ { print "Y " $NF; next }
+  ' >> "$out" || true
+  printf 'END %s\n' "$label" >> "$out"
+}
+
+persist_matrix() {
+  new_matrix="$1"
+  target=/etc/default/pocketchip-touch
+  if [ -w "$target" ]; then
+    sed -i "s/^POCKETCHIP_TOUCH_MATRIX=.*/POCKETCHIP_TOUCH_MATRIX='$new_matrix'/" "$target"
+    return
+  fi
+
+  if command -v sudo >/dev/null 2>&1; then
+    sudo sh -c "sed -i \"s/^POCKETCHIP_TOUCH_MATRIX=.*/POCKETCHIP_TOUCH_MATRIX='$new_matrix'/\" '$target'"
+  else
+    printf 'not root and sudo is missing; matrix was not persisted\n' >&2
+  fi
+}
+
+learn_edges() {
+  command -v evtest >/dev/null 2>&1 || {
+    printf 'evtest is not installed\n' >&2
+    exit 1
+  }
+  command -v python3 >/dev/null 2>&1 || {
+    printf 'python3 is not installed\n' >&2
+    exit 1
+  }
+
+  event="$(event_device)"
+  [ -n "$event" ] || {
+    printf 'could not find event device for %s\n' "$device" >&2
+    exit 1
+  }
+  [ -r "$event" ] || {
+    printf '%s is not readable; run from the configured user or root\n' "$event" >&2
+    exit 1
+  }
+
+  tmp="$(mktemp)"
+  trap 'rm -f "$tmp"' EXIT
+  capture_edge left "$event" "$tmp"
+  capture_edge right "$event" "$tmp"
+  capture_edge top "$event" "$tmp"
+  capture_edge bottom "$event" "$tmp"
+
+  matrix="$(python3 - "$tmp" <<'PY'
+import statistics
+import sys
+
+path = sys.argv[1]
+sections = {}
+current = None
+limits = {"x_min": 0.0, "x_max": 4095.0, "y_min": 0.0, "y_max": 4095.0}
+with open(path, "r", encoding="utf-8") as fh:
+    for raw in fh:
+        parts = raw.split()
+        if not parts:
+            continue
+        if parts[0] == "BEGIN":
+            current = parts[1]
+            sections[current] = {"x": [], "y": []}
+            continue
+        if parts[0] == "END":
+            current = None
+            continue
+        if parts[0] == "ABS_X_MIN":
+            limits["x_min"] = float(parts[1])
+        elif parts[0] == "ABS_X_MAX":
+            limits["x_max"] = float(parts[1])
+        elif parts[0] == "ABS_Y_MIN":
+            limits["y_min"] = float(parts[1])
+        elif parts[0] == "ABS_Y_MAX":
+            limits["y_max"] = float(parts[1])
+        elif current and parts[0] == "X":
+            sections[current]["x"].append(float(parts[1]))
+        elif current and parts[0] == "Y":
+            sections[current]["y"].append(float(parts[1]))
+
+def median(label, axis):
+    vals = sections.get(label, {}).get(axis, [])
+    if not vals:
+        raise SystemExit(f"missing {axis.upper()} samples for {label}")
+    return statistics.median(vals)
+
+def norm(value, lo, hi):
+    if hi == lo:
+        raise SystemExit("input axis min/max are identical")
+    return (value - lo) / (hi - lo)
+
+left = norm(median("left", "x"), limits["x_min"], limits["x_max"])
+right = norm(median("right", "x"), limits["x_min"], limits["x_max"])
+top = norm(median("top", "y"), limits["y_min"], limits["y_max"])
+bottom = norm(median("bottom", "y"), limits["y_min"], limits["y_max"])
+
+if abs(right - left) < 0.05 or abs(bottom - top) < 0.05:
+    raise SystemExit("captured edge range is too small")
+
+a = 1.0 / (right - left)
+c = -left / (right - left)
+e = 1.0 / (bottom - top)
+f = -top / (bottom - top)
+
+print(f"{a:.5f} 0 {c:.5f} 0 {e:.5f} {f:.5f} 0 0 1")
+PY
+)"
+
+  printf 'learned matrix: %s\n' "$matrix"
+  persist_matrix "$matrix"
+  POCKETCHIP_TOUCH_MATRIX="$matrix" "$0" apply
+}
+
+preset="${1:-apply}"
+if [ "$preset" = menu ]; then
+  preset="$(choose_preset)"
+fi
+
+if [ "$preset" = learn-edges ]; then
+  learn_edges
+  exit 0
+fi
+
+if [ "$preset" = status ]; then
+  xinput list "$device" || true
+  ids="$(xinput list --id-only "$device" 2>/dev/null || true)"
+  for id in $ids; do
+    printf '\nproperties for %s:\n' "$id"
+    xinput list-props "$id" || true
+  done
+  exit 0
+fi
+
+matrix="$(matrix_for "$preset")" || {
+  printf 'usage: %s [apply|stylus|edge-fit|identity|invert-x|invert-y|invert-xy|edge-fit-x|edge-fit-y|edge-fit-strong|swap-xy|swap-xy-invert-x|swap-xy-invert-y|learn-edges|status|menu]\n' "$0" >&2
+  exit 2
+}
+
+if ! command -v xinput >/dev/null 2>&1; then
+  printf 'xinput is not installed\n' >&2
+  exit 1
+fi
+
+ids="$(xinput list --id-only "$device" 2>/dev/null || true)"
+if [ -z "$ids" ]; then
+  printf 'touch device not found: %s\n' "$device" >&2
+  exit 1
+fi
+
+for id in $ids; do
+  xinput set-mode "$id" ABSOLUTE 2>/dev/null || true
+
+  if xinput list-props "$id" | grep -q 'libinput Calibration Matrix'; then
+    # shellcheck disable=SC2086
+    xinput set-prop "$id" 'libinput Calibration Matrix' $matrix
+  else
+    # shellcheck disable=SC2086
+    xinput set-prop "$id" 'Coordinate Transformation Matrix' $matrix
+  fi
+
+  xinput set-prop "$id" 'libinput Accel Profile Enabled' 0 1 2>/dev/null || true
+  xinput set-prop "$id" 'libinput Accel Speed' 0 2>/dev/null || true
+done
+
+if [ -z "$output" ] && command -v xrandr >/dev/null 2>&1; then
+  output="$(xrandr --query | awk '$2 == "connected" { print $1; exit }')"
+fi
+
+if [ -n "$output" ]; then
+  for id in $ids; do
+    xinput map-to-output "$id" "$output" 2>/dev/null || true
+  done
+  printf 'mapped %s to output %s\n' "$device" "$output"
+fi
+
+printf 'applied %s: %s\n' "$preset" "$matrix"

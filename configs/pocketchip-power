@@ -1,0 +1,214 @@
+#!/bin/sh
+set -eu
+
+root_helper=/usr/local/sbin/pocketchip-power-root
+lock_dir=/tmp/pocketchip-power-lock
+
+term() {
+  exec xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 "$@"
+}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  pocketchip-power menu
+  pocketchip-power lock
+  pocketchip-power low-lock
+  pocketchip-power performance
+  pocketchip-power normal
+  pocketchip-power screen-off
+  pocketchip-power screen-on
+  pocketchip-power logout
+  pocketchip-power stopx
+  pocketchip-power reboot
+  pocketchip-power poweroff
+EOF
+}
+
+need() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf 'missing command: %s\n' "$1" >&2
+    exit 1
+  fi
+}
+
+rootctl() {
+  if [ ! -x "$root_helper" ]; then
+    printf 'missing root helper: %s\n' "$root_helper" >&2
+    exit 1
+  fi
+  sudo -n "$root_helper" "$@"
+}
+
+confirm() {
+  prompt="$1"
+  if [ -n "${DISPLAY:-}" ] && command -v dmenu >/dev/null 2>&1; then
+    answer="$(printf 'no\nyes\n' | dmenu -i -p "$prompt")"
+    [ "$answer" = yes ]
+    return
+  fi
+
+  printf '%s [y/N]: ' "$prompt"
+  read -r answer
+  case "$answer" in
+    y|Y|yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+xinput_ids() {
+  command -v xinput >/dev/null 2>&1 || return 0
+  xinput list --id-only '1c25000.rtp' 2>/dev/null || true
+  xinput list --id-only 'tca8418' 2>/dev/null || true
+}
+
+disable_local_inputs() {
+  xinput_ids | while read -r id; do
+    [ -n "$id" ] || continue
+    xinput disable "$id" 2>/dev/null || true
+  done
+}
+
+enable_local_inputs() {
+  xinput_ids | while read -r id; do
+    [ -n "$id" ] || continue
+    xinput enable "$id" 2>/dev/null || true
+  done
+}
+
+screen_off() {
+  need xset
+  xset s activate 2>/dev/null || true
+  xset dpms force off
+}
+
+screen_on() {
+  need xset
+  xset s reset 2>/dev/null || true
+  xset dpms force on
+}
+
+lock_cleanup() {
+  enable_local_inputs
+  screen_on 2>/dev/null || true
+  rmdir "$lock_dir" 2>/dev/null || true
+}
+
+lock_screen() {
+  need i3lock
+  need xset
+
+  if ! mkdir "$lock_dir" 2>/dev/null; then
+    return 0
+  fi
+  trap lock_cleanup EXIT INT TERM HUP
+
+  i3lock -n -c 000000 &
+  lock_pid=$!
+  sleep 1
+  if ! kill -0 "$lock_pid" 2>/dev/null; then
+    wait "$lock_pid" 2>/dev/null || true
+    printf 'i3lock exited before the screen could be locked\n' >&2
+    return 1
+  fi
+
+  disable_local_inputs
+  screen_off
+
+  rootctl wait-wake >/dev/null 2>&1 || true
+  enable_local_inputs
+  screen_on
+
+  wait "$lock_pid" 2>/dev/null || true
+}
+
+low_lock() {
+  rc=0
+  rootctl low-enter
+  lock_screen || rc=$?
+  rootctl cpu-restore || true
+  return "$rc"
+}
+
+performance_power() {
+  rootctl performance
+}
+
+normal_power() {
+  rootctl normal
+}
+
+logout_i3() {
+  if [ -n "${DISPLAY:-}" ] && command -v i3-msg >/dev/null 2>&1; then
+    i3-msg exit >/dev/null
+  else
+    printf 'not in an i3 session\n' >&2
+    exit 1
+  fi
+}
+
+stop_x() {
+  if [ -n "${DISPLAY:-}" ] && command -v i3-msg >/dev/null 2>&1; then
+    i3-msg exit >/dev/null 2>&1 || true
+    sleep 1
+  fi
+  rootctl stopx
+}
+
+power_menu() {
+  choices='lock
+low-power-lock
+performance
+normal
+screen-off
+screen-on
+radios-on
+logout
+stopx
+reboot
+poweroff'
+
+  if [ -n "${DISPLAY:-}" ] && command -v dmenu >/dev/null 2>&1; then
+    choice="$(printf '%s\n' "$choices" | dmenu -i -p power)"
+  else
+    printf '%s\n' "$choices"
+    printf 'choice: '
+    read -r choice
+  fi
+
+  [ -n "${choice:-}" ] || exit 0
+  run "$choice"
+}
+
+run() {
+  case "$1" in
+    menu) power_menu ;;
+    lock) lock_screen ;;
+    low-lock|low-power|low-power-lock) low_lock ;;
+    performance|perf) performance_power ;;
+    normal|radios-on) normal_power ;;
+    screen-off) screen_off ;;
+    screen-on) screen_on ;;
+    logout)
+      confirm 'logout?' && logout_i3
+      ;;
+    stopx)
+      confirm 'stop X?' && stop_x
+      ;;
+    reboot)
+      confirm 'reboot?' && rootctl reboot
+      ;;
+    poweroff|shutdown)
+      confirm 'power off?' && rootctl poweroff
+      ;;
+    -h|--help|help) usage ;;
+    *)
+      usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+cmd="${1:-menu}"
+shift || true
+run "$cmd" "$@"

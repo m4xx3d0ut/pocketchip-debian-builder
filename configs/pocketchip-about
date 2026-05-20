@@ -1,0 +1,151 @@
+#!/bin/sh
+set -u
+
+first_line() {
+  [ -r "$1" ] && sed -n '1p' "$1" 2>/dev/null || printf '%s' "${2:---}"
+}
+
+cmd_line() {
+  if command -v "$1" >/dev/null 2>&1; then
+    "$@" 2>/dev/null | sed -n '1p'
+  else
+    printf '%s' '--'
+  fi
+}
+
+pkg_version() {
+  if command -v dpkg-query >/dev/null 2>&1; then
+    dpkg-query -W -f='${Version}' "$1" 2>/dev/null || printf '%s' '--'
+  else
+    printf '%s' '--'
+  fi
+}
+
+kv() {
+  printf '%-9s %s\n' "$1" "$2"
+}
+
+active() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    printf '%s' '--'
+  elif systemctl is-active --quiet "$1" 2>/dev/null; then
+    printf '%s' active
+  else
+    printf '%s' inactive
+  fi
+}
+
+os_pretty='Debian GNU/Linux 13 (trixie)'
+os_codename='trixie'
+if [ -r /etc/os-release ]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  os_pretty="${PRETTY_NAME:-$os_pretty}"
+  os_codename="${VERSION_CODENAME:-$os_codename}"
+fi
+
+i3_raw="$(cmd_line i3 --version)"
+i3_pkg="$(pkg_version i3-wm)"
+i3_release="$(printf '%s\n' "$i3_raw" | sed -n 's/^i3 version \([^ ]*\).*/\1/p')"
+i3_date="$(printf '%s\n' "$i3_raw" | sed -n 's/.*(\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\)).*/\1/p')"
+i3_version="$i3_raw"
+if [ -n "$i3_release" ]; then
+  i3_version="i3 $i3_release"
+  [ -n "$i3_date" ] && i3_version="$i3_version ($i3_date)"
+  [ "$i3_pkg" != '--' ] && i3_version="$i3_version, Debian i3-wm $i3_pkg"
+fi
+kernel="$(uname -srmo 2>/dev/null || uname -a)"
+uptime_text="$(uptime -p 2>/dev/null || cut -d' ' -f1 /proc/uptime 2>/dev/null)"
+load="$(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || printf -- '--')"
+memory="$(
+  awk '
+    $1 == "MemTotal:" { total = int($2 / 1024) }
+    $1 == "MemAvailable:" { avail = int($2 / 1024) }
+    END {
+      if (total > 0) printf "%d/%dM used", total - avail, total;
+      else printf "--";
+    }
+  ' /proc/meminfo 2>/dev/null
+)"
+root_usage="$(df -h / 2>/dev/null | awk 'NR == 2 { printf "%s/%s (%s)", $3, $2, $5 }')"
+root_src="$(findmnt -no SOURCE,FSTYPE / 2>/dev/null | sed -n '1p')"
+
+battery_dir=/sys/class/power_supply/axp20x-battery
+if [ -d "$battery_dir" ]; then
+  battery="$(first_line "$battery_dir/capacity" --)% $(first_line "$battery_dir/status" --)"
+else
+  battery='--'
+fi
+
+wifi='--'
+if command -v nmcli >/dev/null 2>&1; then
+  wifi="$(nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status 2>/dev/null | awk -F: '$2 == "wifi" { printf "%s %s %s", $1, $3, ($4 ? $4 : "--"); exit }')"
+fi
+[ -n "$wifi" ] || wifi='--'
+ip4="$(ip -o -4 addr show scope global 2>/dev/null | awk '{ sub(/\/.*/, "", $4); printf "%s:%s ", $2, $4 }')"
+[ -n "$ip4" ] || ip4='--'
+
+screen='--'
+if [ -n "${DISPLAY:-}" ] && command -v xrandr >/dev/null 2>&1; then
+  screen="$(xrandr --query 2>/dev/null | awk '$2 == "connected" { print $1 " " $3; exit }')"
+fi
+[ -n "$screen" ] || screen='serial/no DISPLAY'
+
+touch='--'
+if [ -r /etc/default/pocketchip-touch ]; then
+  touch="$(sed -n 's/^POCKETCHIP_TOUCH_MATRIX=//p' /etc/default/pocketchip-touch | sed 's/\\//g; s/'\''//g')"
+fi
+[ -n "$touch" ] || touch='--'
+
+browser="$(dpkg-query -W -f='firefox-esr ${Version}' firefox-esr 2>/dev/null || printf -- '--')"
+support='/usr/share/doc/pocketchip/i3-cheatsheet.md'
+profile='--'
+root_auth='--'
+timezone='--'
+if [ -r /etc/default/pocketchip-user ]; then
+  profile="$(sed -n 's/^POCKETCHIP_IMAGE_PROFILE=//p' /etc/default/pocketchip-user | sed "s/'//g" | sed -n '1p')"
+  root_auth="$(sed -n 's/^POCKETCHIP_ROOT_AUTH=//p' /etc/default/pocketchip-user | sed "s/'//g" | sed -n '1p')"
+fi
+if [ -r /etc/default/pocketchip-ui ]; then
+  timezone="$(sed -n 's/^POCKETCHIP_TIMEZONE=//p' /etc/default/pocketchip-ui | sed "s/'//g" | sed -n '1p')"
+fi
+[ -n "$profile" ] || profile='--'
+[ -n "$root_auth" ] || root_auth='--'
+[ -n "$timezone" ] || timezone='--'
+
+clear 2>/dev/null || true
+cat <<'EOF'
+PocketCHIP System
+=================
+EOF
+
+kv Device "Next Thing Co. PocketCHIP / C.H.I.P."
+kv OS "$os_pretty"
+kv Codename "$os_codename"
+kv WM "$i3_version"
+kv Kernel "$kernel"
+kv Profile "$profile"
+kv RootAuth "$root_auth"
+kv TZ "$timezone"
+kv Screen "$screen"
+kv User "${USER:---}"
+kv Uptime "$uptime_text"
+kv Load "$load"
+kv Memory "$memory"
+kv Root "$root_usage"
+kv Source "$root_src"
+kv Battery "$battery"
+kv Wi-Fi "$wifi"
+kv IPv4 "$ip4"
+kv SSH "$(active ssh.service)"
+kv BT "$(active bluetooth.service)"
+kv Touch "$touch"
+kv Browser "$browser"
+kv Help "$support"
+
+cat <<'EOF'
+
+Support note:
+  This PocketCHIP is running Debian 13 Trixie with i3 on
+  a mainline-kernel UBIFS NAND rootfs installed through FEL rescue.
+EOF

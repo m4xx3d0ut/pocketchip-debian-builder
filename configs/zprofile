@@ -1,0 +1,10 @@
+if [ -r /etc/default/pocketchip-ui ]; then
+  . /etc/default/pocketchip-ui
+fi
+
+if [ "${POCKETCHIP_BOOT_TO_I3:-1}" = 1 ] &&
+   [ -z "${DISPLAY:-}" ] &&
+   [ "$(tty 2>/dev/null)" = /dev/tty1 ] &&
+   [ -x /usr/local/bin/pocketchip-startx ]; then
+  exec /usr/local/bin/pocketchip-startx "$USER"
+fi

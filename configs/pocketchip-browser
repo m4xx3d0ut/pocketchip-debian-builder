@@ -1,0 +1,63 @@
+#!/bin/sh
+set -eu
+
+if [ -r /etc/default/pocketchip-ui ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-ui
+fi
+
+mode="${1:-}"
+browser="${POCKETCHIP_BROWSER:-firefox-esr}"
+prefer_light=0
+
+case "$mode" in
+  light|netsurf|netsurf-gtk)
+    shift
+    browser=netsurf-gtk
+    prefer_light=1
+    ;;
+  firefox|firefox-esr|modern)
+    shift
+    browser=firefox-esr
+    ;;
+  chromium)
+    shift
+    browser=chromium
+    ;;
+esac
+
+if command -v "$browser" >/dev/null 2>&1; then
+  if [ "$browser" = firefox-esr ]; then
+    export MOZ_ENABLE_WAYLAND=0
+    export MOZ_USE_XINPUT2=1
+    profile="${POCKETCHIP_FIREFOX_PROFILE:-$HOME/.mozilla/firefox/pocketchip.default}"
+    if [ -d "$profile" ]; then
+      set -- --profile "$profile" "$@"
+    fi
+    if [ "${POCKETCHIP_BROWSER_FULLSCREEN:-1}" = 1 ] &&
+       [ -n "${DISPLAY:-}" ] &&
+       command -v xdotool >/dev/null 2>&1; then
+      "$browser" "$@" &
+      pid=$!
+      (
+        sleep 4
+        xdotool search --sync --onlyvisible --class firefox windowactivate --sync key F11 \
+          >/dev/null 2>&1 || true
+      ) &
+      wait "$pid"
+      exit $?
+    fi
+  fi
+  exec "$browser" "$@"
+fi
+
+if command -v netsurf-gtk >/dev/null 2>&1; then
+  exec netsurf-gtk "$@"
+fi
+
+if [ "$prefer_light" = 1 ] && command -v firefox-esr >/dev/null 2>&1; then
+  POCKETCHIP_BROWSER_FULLSCREEN=1 exec pocketchip-browser firefox "$@"
+fi
+
+printf 'no browser found; install firefox-esr or netsurf-gtk\n' >&2
+exit 1

@@ -1,0 +1,193 @@
+#!/bin/sh
+set -eu
+
+battery=/sys/class/power_supply/axp20x-battery
+usb=/sys/class/power_supply/axp20x-usb
+ac=/sys/class/power_supply/axp20x-ac
+
+color_ok='#00ff66'
+color_warn='#ffd75f'
+color_bad='#ff5f5f'
+color_dim='#66d9ef'
+color_text='#d0ffd0'
+
+read_first_line() {
+  [ -r "$1" ] && sed -n '1p' "$1" 2>/dev/null || printf '%s' "$2"
+}
+
+wifi_status() {
+  if [ -r /proc/net/wireless ] && awk 'NR > 2 && $1 ~ /wlan0:/ { found = 1 } END { exit !found }' /proc/net/wireless; then
+    quality="$(awk 'NR > 2 && $1 ~ /wlan0:/ { gsub(/\./, "", $3); print $3 }' /proc/net/wireless)"
+    text="wifi ${quality:-up}/70"
+    if [ "${quality:-0}" -ge 45 ] 2>/dev/null; then
+      color=$color_ok
+    elif [ "${quality:-0}" -ge 25 ] 2>/dev/null; then
+      color=$color_warn
+    else
+      color=$color_bad
+    fi
+    return
+  fi
+
+  if [ -r /sys/class/net/wlan0/operstate ]; then
+    state="$(read_first_line /sys/class/net/wlan0/operstate down)"
+    text="wifi $state"
+    case "$state" in
+      up) color=$color_ok ;;
+      dormant|unknown) color=$color_warn ;;
+      *) color=$color_bad ;;
+    esac
+    return
+  fi
+
+  text='wifi --'
+  color=$color_bad
+}
+
+memory_status() {
+  if [ ! -r /proc/meminfo ]; then
+    text='mem --'
+    color=$color_warn
+    return
+  fi
+
+  mem_line="$(awk '
+    $1 == "MemTotal:" { total = int($2 / 1024) }
+    $1 == "MemAvailable:" { avail = int($2 / 1024) }
+    END {
+      if (total > 0) {
+        used = total - avail
+        pct = int(used * 100 / total)
+        printf "%d %d %d", used, total, pct
+      } else {
+        printf "0 0 0"
+      }
+    }
+  ' /proc/meminfo)"
+  set -- $mem_line
+  used=$1
+  total=$2
+  pct=$3
+  if [ "$total" -gt 0 ]; then
+    text="mem ${used}/${total}M"
+    if [ "$pct" -ge 85 ]; then
+      color=$color_bad
+    elif [ "$pct" -ge 70 ]; then
+      color=$color_warn
+    else
+      color=$color_text
+    fi
+  else
+    text='mem --'
+    color=$color_warn
+  fi
+}
+
+battery_status() {
+  if [ ! -d "$battery" ]; then
+    text='bat --'
+    color=$color_warn
+    return
+  fi
+
+  capacity="$(read_first_line "$battery/capacity" --)"
+  state="$(read_first_line "$battery/status" Unknown)"
+  usb_online="$(read_first_line "$usb/online" 0)"
+  ac_online="$(read_first_line "$ac/online" 0)"
+
+  plug=''
+  if [ "$usb_online" = 1 ] || [ "$ac_online" = 1 ]; then
+    plug=' chg'
+  fi
+
+  case "$state" in
+    Charging) state='+' ;;
+    Discharging) state='-' ;;
+    Full) state='full' ;;
+    *) state='' ;;
+  esac
+
+  text="bat ${capacity}%${plug} ${state}"
+  if [ "$capacity" = -- ]; then
+    color=$color_warn
+  elif [ "$capacity" -le 15 ] && [ -z "$plug" ]; then
+    color=$color_bad
+  elif [ "$capacity" -le 35 ] && [ -z "$plug" ]; then
+    color=$color_warn
+  elif [ -n "$plug" ]; then
+    color=$color_dim
+  else
+    color=$color_ok
+  fi
+}
+
+load_status() {
+  if [ ! -r /proc/loadavg ]; then
+    text='load --'
+    color=$color_warn
+    return
+  fi
+
+  load="$(cut -d' ' -f1 /proc/loadavg)"
+  whole="${load%%.*}"
+  text="load $load"
+  if [ "$whole" -ge 2 ] 2>/dev/null; then
+    color=$color_bad
+  elif [ "$whole" -ge 1 ] 2>/dev/null; then
+    color=$color_warn
+  else
+    color=$color_text
+  fi
+}
+
+time_status() {
+  text="$(date '+%H:%M')"
+  color=$color_dim
+}
+
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+json_block() {
+  label=$1
+  block_color=$2
+  printf '{"full_text":"%s","color":"%s"}' "$(json_escape "$label")" "$block_color"
+}
+
+emit_status() {
+  battery_status
+  bat_text=$text
+  bat_color=$color
+  wifi_status
+  wifi_text=$text
+  wifi_color=$color
+  memory_status
+  mem_text=$text
+  mem_color=$color
+  load_status
+  load_text=$text
+  load_color=$color
+  time_status
+  time_text=$text
+  time_color=$color
+
+  printf '['
+  json_block "$bat_text" "$bat_color"
+  printf ','
+  json_block "$wifi_text" "$wifi_color"
+  printf ','
+  json_block "$mem_text" "$mem_color"
+  printf ','
+  json_block "$load_text" "$load_color"
+  printf ','
+  json_block "$time_text" "$time_color"
+  printf '],\n'
+}
+
+printf '{"version":1,"click_events":false}\n'
+printf '[\n'
+while :; do
+  emit_status
+  sleep 5
+done

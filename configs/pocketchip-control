@@ -1,0 +1,279 @@
+#!/bin/sh
+set -eu
+
+volume_step=${POCKETCHIP_VOLUME_STEP:-5%}
+preferred_volume_control=${POCKETCHIP_VOLUME_CONTROL:-Power Amplifier}
+alsa_card=${POCKETCHIP_ALSA_CARD:-0}
+
+usage() {
+  cat <<'EOF'
+Usage:
+  pocketchip-control menu
+  pocketchip-control brightness
+  pocketchip-control brightness-up
+  pocketchip-control brightness-down
+  pocketchip-control brightness-set LEVEL
+  pocketchip-control volume
+  pocketchip-control volume-up
+  pocketchip-control volume-down
+  pocketchip-control volume-mute
+  pocketchip-control volume-on
+  pocketchip-control volume-off
+  pocketchip-control status
+EOF
+}
+
+need() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf 'missing command: %s\n' "$1" >&2
+    exit 1
+  fi
+}
+
+backlight_dir() {
+  preferred=${POCKETCHIP_BACKLIGHT:-backlight}
+  if [ -d "/sys/class/backlight/$preferred" ]; then
+    printf '%s\n' "/sys/class/backlight/$preferred"
+    return 0
+  fi
+
+  for dir in /sys/class/backlight/*; do
+    [ -d "$dir" ] || continue
+    printf '%s\n' "$dir"
+    return 0
+  done
+
+  return 1
+}
+
+backlight_device() {
+  dir="$(backlight_dir)" || {
+    printf 'no backlight device found\n' >&2
+    exit 1
+  }
+  basename "$dir"
+}
+
+brightness_values() {
+  dir="$(backlight_dir)" || {
+    printf 'no backlight device found\n' >&2
+    exit 1
+  }
+  cur="$(sed -n '1p' "$dir/brightness")"
+  actual="$(sed -n '1p' "$dir/actual_brightness" 2>/dev/null || printf '%s' "$cur")"
+  max="$(sed -n '1p' "$dir/max_brightness")"
+  printf '%s %s %s\n' "$cur" "$actual" "$max"
+}
+
+brightness_status() {
+  set -- $(brightness_values)
+  cur=$1
+  actual=$2
+  max=$3
+  pct=$((actual * 100 / max))
+  printf 'brightness %s/%s (%s%%)\n' "$actual" "$max" "$pct"
+}
+
+brightness_set() {
+  level="${1:-}"
+  case "$level" in
+    ''|*[!0-9]*)
+      printf 'brightness level must be 0..max\n' >&2
+      exit 2
+      ;;
+  esac
+
+  set -- $(brightness_values)
+  max=$3
+  if [ "$level" -gt "$max" ]; then
+    level=$max
+  fi
+
+  need brightnessctl
+  brightnessctl -q -d "$(backlight_device)" set "$level"
+}
+
+brightness_up() {
+  set -- $(brightness_values)
+  cur=$1
+  max=$3
+  [ "$cur" -lt "$max" ] || exit 0
+  brightness_set $((cur + 1))
+}
+
+brightness_down() {
+  set -- $(brightness_values)
+  cur=$1
+  if [ "$cur" -le 1 ]; then
+    brightness_set 1
+  else
+    brightness_set $((cur - 1))
+  fi
+}
+
+brightness_menu() {
+  while :; do
+    printf '\nPocketCHIP Brightness\n'
+    brightness_status
+    cat <<'EOF'
+
+u  up one step
+d  down one step, minimum 1
+0-10 set raw level
+q  quit
+
+Choice:
+EOF
+    read -r choice || exit 0
+    case "$choice" in
+      q|quit|exit) exit 0 ;;
+      u|up|+) brightness_up ;;
+      d|down|-) brightness_down ;;
+      '' ) : ;;
+      *[!0-9]*)
+        printf 'unknown choice: %s\n' "$choice" >&2
+        ;;
+      *)
+        brightness_set "$choice"
+        ;;
+    esac
+  done
+}
+
+amixer_has() {
+  amixer sget "$1" >/dev/null 2>&1
+}
+
+volume_control() {
+  for control in "$preferred_volume_control" Master PCM Speaker Headphone; do
+    if amixer_has "$control"; then
+      printf '%s\n' "$control"
+      return 0
+    fi
+  done
+
+  printf 'no usable ALSA output mixer found\n' >&2
+  return 1
+}
+
+volume_route_on() {
+  if amixer_has 'Power Amplifier DAC'; then
+    amixer -q set 'Power Amplifier DAC' on || true
+  fi
+  if amixer_has 'Power Amplifier Mute'; then
+    amixer -q set 'Power Amplifier Mute' on || true
+  fi
+}
+
+volume_route_off() {
+  if amixer_has 'Power Amplifier Mute'; then
+    amixer -q set 'Power Amplifier Mute' off || true
+  else
+    control="$(volume_control)"
+    amixer -q set "$control" 0% || true
+  fi
+}
+
+volume_route_enabled() {
+  if amixer_has 'Power Amplifier Mute'; then
+    amixer sget 'Power Amplifier Mute' | grep -q '\[on\]'
+    return
+  fi
+  return 1
+}
+
+volume_percent() {
+  control="$(volume_control)"
+  amixer sget "$control" | sed -n 's/.*\[\([0-9][0-9]*\)%\].*/\1/p' | sed -n '1p'
+}
+
+volume_status() {
+  control="$(volume_control)"
+  pct="$(volume_percent)"
+  route=off
+  if volume_route_enabled; then
+    route=on
+  fi
+  printf 'volume %s%% via %s, output %s\n' "${pct:-unknown}" "$control" "$route"
+}
+
+volume_up() {
+  control="$(volume_control)"
+  volume_route_on
+  amixer -q set "$control" "$volume_step+"
+}
+
+volume_down() {
+  control="$(volume_control)"
+  amixer -q set "$control" "$volume_step-"
+}
+
+volume_toggle() {
+  if volume_route_enabled; then
+    volume_route_off
+  else
+    volume_route_on
+  fi
+}
+
+volume_mixer() {
+  need alsamixer
+  exec alsamixer -c "$alsa_card"
+}
+
+control_menu() {
+  cat <<'EOF'
+PocketCHIP Controls
+
+1 Brightness TUI
+2 ALSA mixer
+3 Brightness up
+4 Brightness down
+5 Volume up
+6 Volume down
+7 Toggle audio output
+8 Status
+
+Choice:
+EOF
+  read -r choice || exit 0
+  case "$choice" in
+    1) brightness_menu ;;
+    2) volume_mixer ;;
+    3) brightness_up ;;
+    4) brightness_down ;;
+    5) volume_up ;;
+    6) volume_down ;;
+    7) volume_toggle ;;
+    8) status ;;
+    *) usage; exit 2 ;;
+  esac
+}
+
+status() {
+  brightness_status
+  if command -v amixer >/dev/null 2>&1; then
+    volume_status || true
+  else
+    printf 'volume unavailable: missing amixer\n'
+  fi
+}
+
+cmd="${1:-menu}"
+shift || true
+case "$cmd" in
+  menu|controls) control_menu ;;
+  brightness|brightness-menu) brightness_menu ;;
+  brightness-up|br-up) brightness_up ;;
+  brightness-down|br-down) brightness_down ;;
+  brightness-set|br-set) brightness_set "${1:-}" ;;
+  volume|mixer|alsamixer) volume_mixer ;;
+  volume-up|vol-up) volume_up ;;
+  volume-down|vol-down) volume_down ;;
+  volume-mute|volume-toggle|mute) volume_toggle ;;
+  volume-on|unmute) volume_route_on ;;
+  volume-off) volume_route_off ;;
+  status) status ;;
+  -h|--help|help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

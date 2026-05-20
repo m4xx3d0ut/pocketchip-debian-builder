@@ -1,0 +1,13 @@
+[Unit]
+Description=Load PocketCHIP console keymap
+DefaultDependencies=no
+After=local-fs.target
+Before=getty.target
+ConditionPathExists=/usr/local/share/keymaps/pocketchip.kmap
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/loadkeys /usr/local/share/keymaps/pocketchip.kmap
+
+[Install]
+WantedBy=multi-user.target

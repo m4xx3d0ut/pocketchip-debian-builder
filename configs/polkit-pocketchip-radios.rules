@@ -1,0 +1,11 @@
+polkit.addRule(function(action, subject) {
+  if (subject.isInGroup("netdev") &&
+      action.id.indexOf("org.freedesktop.NetworkManager.") === 0) {
+    return polkit.Result.YES;
+  }
+
+  if (subject.isInGroup("bluetooth") &&
+      action.id.indexOf("org.bluez.") === 0) {
+    return polkit.Result.YES;
+  }
+});

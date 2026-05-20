@@ -1,0 +1,30 @@
+#!/bin/sh
+set -eu
+
+if [ -r /etc/default/pocketchip-user ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-user
+fi
+
+user="${1:-${POCKETCHIP_USER:-}}"
+if [ -z "$user" ]; then
+  user="$(awk -F: '$3 >= 1000 && $3 < 60000 { print $1; exit }' /etc/passwd)"
+fi
+
+home="$(getent passwd "$user" | cut -d: -f6)"
+
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo /usr/local/bin/pocketchip-startx "$user"
+fi
+
+if [ -z "$home" ] || [ ! -d "$home" ]; then
+	printf 'error: user %s does not have a home directory\n' "$user" >&2
+	exit 1
+fi
+
+cd "$home"
+
+# shellcheck disable=SC2016
+exec xinit \
+    /usr/bin/sudo -H -u "$user" /bin/sh -c 'cd "$HOME" && exec /bin/sh "$HOME/.xinitrc"' \
+    -- /usr/lib/xorg/Xorg :0 vt1 -nolisten tcp

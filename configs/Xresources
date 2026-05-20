@@ -1,0 +1,14 @@
+XTerm*background: black
+XTerm*foreground: green
+XTerm*cursorColor: green
+XTerm*pointerColor: green
+XTerm*pointerColorBackground: black
+XTerm*faceName: DejaVu Sans Mono
+XTerm*faceSize: 7
+XTerm*termName: xterm-256color
+XTerm*scrollBar: false
+XTerm*saveLines: 1000
+XTerm*selectToClipboard: true
+XTerm*loginShell: true
+XTerm*eightBitInput: false
+XTerm*metaSendsEscape: true

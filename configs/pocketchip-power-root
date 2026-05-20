@@ -1,0 +1,222 @@
+#!/bin/sh
+set -eu
+
+state_dir=/run/pocketchip-power
+
+usage() {
+  cat <<'EOF'
+Usage:
+  pocketchip-power-root wait-wake
+  pocketchip-power-root low-enter
+  pocketchip-power-root cpu-restore
+  pocketchip-power-root performance
+  pocketchip-power-root normal
+  pocketchip-power-root radios-off
+  pocketchip-power-root radios-on
+  pocketchip-power-root stopx
+  pocketchip-power-root reboot
+  pocketchip-power-root poweroff
+EOF
+}
+
+mkdir_state() {
+  install -d -m 0755 "$state_dir"
+}
+
+power_button_event() {
+  awk '
+    /^N: Name="axp20x-pek"/ { found = 1; next }
+    found && /^H: Handlers=/ {
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^event[0-9]+$/) {
+          print "/dev/input/" $i
+          exit
+        }
+      }
+    }
+    /^$/ { found = 0 }
+  ' /proc/bus/input/devices 2>/dev/null || true
+}
+
+power_snapshot() {
+  for f in \
+    /sys/class/power_supply/axp20x-usb/online \
+    /sys/class/power_supply/axp20x-ac/online \
+    /sys/class/power_supply/axp20x-battery/status \
+    /sys/class/power_supply/axp20x-battery/capacity
+  do
+    if [ -r "$f" ]; then
+      printf '%s=' "$f"
+      cat "$f"
+    fi
+  done
+}
+
+wait_wake() {
+  mkdir_state
+  token="$state_dir/wake.$$"
+  old="$(power_snapshot)"
+  event="$(power_button_event)"
+  pids=''
+
+  rm -f "$token"
+
+  if [ -n "$event" ] && [ -r "$event" ]; then
+    (
+      dd if="$event" of=/dev/null bs=16 count=1 >/dev/null 2>&1 || true
+      printf 'button\n' > "$token"
+    ) &
+    pids="$pids $!"
+  fi
+
+  (
+    while :; do
+      sleep 1
+      new="$(power_snapshot)"
+      if [ "$new" != "$old" ]; then
+        printf 'power\n' > "$token"
+        exit 0
+      fi
+    done
+  ) &
+  pids="$pids $!"
+
+  while [ ! -s "$token" ]; do
+    sleep 0.2
+  done
+
+  cat "$token"
+  rm -f "$token"
+  # shellcheck disable=SC2086
+  kill $pids 2>/dev/null || true
+}
+
+save_cpu_max() {
+  mkdir_state
+  for d in /sys/devices/system/cpu/cpu*/cpufreq; do
+    [ -d "$d" ] || continue
+    cpu="${d%/cpufreq}"
+    cpu="${cpu##*/}"
+    [ -r "$d/scaling_max_freq" ] || continue
+    [ -f "$state_dir/$cpu.scaling_max_freq" ] || cat "$d/scaling_max_freq" > "$state_dir/$cpu.scaling_max_freq"
+  done
+}
+
+save_cpu_governor() {
+  mkdir_state
+  for d in /sys/devices/system/cpu/cpu*/cpufreq; do
+    [ -d "$d" ] || continue
+    cpu="${d%/cpufreq}"
+    cpu="${cpu##*/}"
+    [ -r "$d/scaling_governor" ] || continue
+    [ -f "$state_dir/$cpu.scaling_governor" ] || cat "$d/scaling_governor" > "$state_dir/$cpu.scaling_governor"
+  done
+}
+
+cpu_low() {
+  save_cpu_max
+  for d in /sys/devices/system/cpu/cpu*/cpufreq; do
+    [ -d "$d" ] || continue
+    [ -r "$d/scaling_min_freq" ] || continue
+    [ -w "$d/scaling_max_freq" ] || continue
+    cat "$d/scaling_min_freq" > "$d/scaling_max_freq" 2>/dev/null || true
+  done
+}
+
+cpu_performance() {
+  save_cpu_max
+  save_cpu_governor
+  for d in /sys/devices/system/cpu/cpu*/cpufreq; do
+    [ -d "$d" ] || continue
+    if [ -r "$d/cpuinfo_max_freq" ] && [ -w "$d/scaling_max_freq" ]; then
+      cat "$d/cpuinfo_max_freq" > "$d/scaling_max_freq" 2>/dev/null || true
+    fi
+    if [ -r "$d/scaling_available_governors" ] &&
+       grep -qw performance "$d/scaling_available_governors" &&
+       [ -w "$d/scaling_governor" ]; then
+      printf 'performance\n' > "$d/scaling_governor" 2>/dev/null || true
+    fi
+  done
+}
+
+cpu_restore() {
+  for f in "$state_dir"/cpu*.scaling_max_freq; do
+    [ -r "$f" ] || continue
+    cpu="${f##*/}"
+    cpu="${cpu%.scaling_max_freq}"
+    d="/sys/devices/system/cpu/$cpu/cpufreq"
+    [ -w "$d/scaling_max_freq" ] || continue
+    cat "$f" > "$d/scaling_max_freq" 2>/dev/null || true
+    rm -f "$f"
+  done
+  for f in "$state_dir"/cpu*.scaling_governor; do
+    [ -r "$f" ] || continue
+    cpu="${f##*/}"
+    cpu="${cpu%.scaling_governor}"
+    d="/sys/devices/system/cpu/$cpu/cpufreq"
+    [ -w "$d/scaling_governor" ] || continue
+    cat "$f" > "$d/scaling_governor" 2>/dev/null || true
+    rm -f "$f"
+  done
+}
+
+radios_off() {
+  nmcli radio wifi off >/dev/null 2>&1 || true
+  rfkill block wifi 2>/dev/null || true
+
+  if command -v bluetoothctl >/dev/null 2>&1; then
+    bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
+scan off
+power off
+quit
+EOF
+  fi
+  systemctl stop bluetooth.service >/dev/null 2>&1 || true
+  rfkill block bluetooth 2>/dev/null || true
+}
+
+radios_on() {
+  rfkill unblock wifi 2>/dev/null || true
+  nmcli radio wifi on >/dev/null 2>&1 || true
+
+  rfkill unblock bluetooth 2>/dev/null || true
+  systemctl start bluetooth.service >/dev/null 2>&1 || true
+  if command -v bluetoothctl >/dev/null 2>&1; then
+    bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
+power on
+quit
+EOF
+  fi
+}
+
+low_enter() {
+  radios_off
+  cpu_low
+}
+
+normal() {
+  cpu_restore
+  radios_on
+}
+
+stopx() {
+  pkill -TERM -x i3 2>/dev/null || true
+  sleep 1
+  pkill -TERM -x Xorg 2>/dev/null || true
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  wait-wake) wait_wake ;;
+  low-enter) low_enter ;;
+  cpu-restore) cpu_restore ;;
+  performance) cpu_performance ;;
+  normal) normal ;;
+  radios-off) radios_off ;;
+  radios-on) radios_on ;;
+  stopx) stopx ;;
+  reboot) systemctl reboot ;;
+  poweroff) systemctl poweroff ;;
+  -h|--help|help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

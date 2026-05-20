@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+if [ -r /etc/default/pocketchip-ui ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-ui
+fi
+if [ -r /etc/default/pocketchip-touch ]; then
+  # shellcheck disable=SC1091
+  . /etc/default/pocketchip-touch
+fi
+
+[ "${POCKETCHIP_GESTURES:-1}" = 1 ] || exit 0
+command -v lisgd >/dev/null 2>&1 || exit 0
+
+device="${POCKETCHIP_GESTURE_DEVICE:-}"
+if [ -z "$device" ]; then
+  device="$(
+    awk '
+      /^N: Name="/ {
+        active = ($0 ~ /1c25000\.rtp/)
+      }
+      active && /^H: Handlers=/ {
+        for (i = 1; i <= NF; i++) {
+          if ($i ~ /^event[0-9]+$/) {
+            print "/dev/input/" $i
+            exit
+          }
+        }
+      }
+    ' /proc/bus/input/devices 2>/dev/null || true
+  )"
+fi
+
+[ -n "$device" ] || exit 0
+[ -r "$device" ] || exit 0
+
+width="${POCKETCHIP_SCREEN_WIDTH:-480}"
+height="${POCKETCHIP_SCREEN_HEIGHT:-272}"
+threshold="${POCKETCHIP_GESTURE_THRESHOLD:-42}"
+timeout_ms="${POCKETCHIP_GESTURE_TIMEOUT_MS:-700}"
+leniency="${POCKETCHIP_GESTURE_LENIENCY:-25}"
+
+exec lisgd \
+  -d "$device" \
+  -w "$width" \
+  -h "$height" \
+  -t "$threshold" \
+  -m "$timeout_ms" \
+  -r "$leniency" \
+  -g "1,LR,L,*,R,pocketchip-browser-action back" \
+  -g "1,RL,R,*,R,pocketchip-browser-action forward" \
+  -g "1,DU,B,*,R,pocketchip-browser-action page-down" \
+  -g "1,UD,T,*,R,pocketchip-browser-action page-up"

@@ -1,0 +1,111 @@
+#!/bin/sh
+set -eu
+
+term() {
+  exec xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 "$@"
+}
+
+run_choice() {
+  case "$1" in
+    terminal|term)
+      term
+      ;;
+    tmux)
+      term -e tmux new-session -A -s pocketchip
+      ;;
+    nvim|neovim|edit)
+      term -e nvim
+      ;;
+    htop|top)
+      term -e htop
+      ;;
+    browser|web)
+      exec pocketchip-browser
+      ;;
+    browser-light|web-light|netsurf)
+      exec pocketchip-browser light
+      ;;
+    wifi)
+      term -e pocketchip-connect wifi
+      ;;
+    bluetooth|bt)
+      term -e pocketchip-connect bt
+      ;;
+    touch)
+      term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu
+      ;;
+    controls)
+      term -geometry 74x16 -e pocketchip-control menu
+      ;;
+    brightness)
+      term -geometry 74x14 -e pocketchip-control brightness
+      ;;
+    volume|mixer|audio)
+      term -geometry 74x18 -e pocketchip-control volume
+      ;;
+    about|info|system)
+      term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
+      ;;
+    help|cheat|cheatsheet)
+      term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
+      ;;
+    status)
+      term -hold -e pocketchip-status
+      ;;
+    power)
+      exec pocketchip-power menu
+      ;;
+    lock)
+      exec pocketchip-power lock
+      ;;
+    low-power|low-power-lock)
+      exec pocketchip-power low-lock
+      ;;
+    performance|perf)
+      exec pocketchip-power performance
+      ;;
+    radios-on|normal)
+      exec pocketchip-power normal
+      ;;
+    *)
+      printf 'unknown PocketCHIP menu choice: %s\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+}
+
+if [ "${1:-}" ]; then
+  run_choice "$1"
+fi
+
+choices='terminal
+tmux
+nvim
+htop
+browser
+browser-light
+wifi
+bluetooth
+touch
+controls
+brightness
+volume
+about
+help
+status
+power
+lock
+low-power
+performance
+radios-on'
+
+if [ -n "${DISPLAY:-}" ] && command -v dmenu >/dev/null 2>&1; then
+  choice="$(printf '%s\n' "$choices" | dmenu -i -p chip)"
+else
+  printf '%s\n' "$choices"
+  printf 'choice: '
+  read -r choice
+fi
+
+[ -n "${choice:-}" ] || exit 0
+run_choice "$choice"

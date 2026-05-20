@@ -1,0 +1,259 @@
+#!/bin/sh
+set -eu
+
+usage() {
+  cat <<'EOF'
+Usage:
+  pocketchip-connect menu
+  pocketchip-connect wifi
+  pocketchip-connect wifi-list
+  pocketchip-connect wifi-connect [--hidden] SSID [PSK]
+  pocketchip-connect wifi-hidden PROFILE [yes|no]
+  pocketchip-connect bt
+  pocketchip-connect bt-info
+  pocketchip-connect bt-reset
+  pocketchip-connect bt-scan [SECONDS]
+  pocketchip-connect bt-devices
+  pocketchip-connect bt-pair MAC
+  pocketchip-connect bt-connect MAC
+EOF
+}
+
+need() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf 'missing command: %s\n' "$1" >&2
+    exit 1
+  fi
+}
+
+wifi_list() {
+  need nmcli
+  nmcli radio wifi on || true
+  nmcli device wifi rescan ifname wlan0 || true
+  nmcli --colors yes --fields IN-USE,SSID,CHAN,RATE,SIGNAL,SECURITY device wifi list ifname wlan0
+}
+
+wifi_connect() {
+  need nmcli
+  hidden=0
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --hidden|-H)
+        hidden=1
+        shift
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        printf 'unknown wifi-connect option: %s\n' "$1" >&2
+        exit 2
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  ssid="${1:-}"
+  psk="${2:-}"
+  if [ -z "$ssid" ]; then
+    printf 'SSID: '
+    read -r ssid
+  fi
+  if [ -z "$psk" ]; then
+    printf 'PSK, blank for open network: '
+    stty -echo
+    read -r psk
+    stty echo
+    printf '\n'
+  fi
+
+  nmcli radio wifi on || true
+  if [ "$hidden" = 1 ]; then
+    if [ -n "$psk" ]; then
+      nmcli device wifi connect "$ssid" password "$psk" hidden yes ifname wlan0
+    else
+      nmcli device wifi connect "$ssid" hidden yes ifname wlan0
+    fi
+  elif [ -n "$psk" ]; then
+    nmcli device wifi connect "$ssid" password "$psk" ifname wlan0
+  else
+    nmcli device wifi connect "$ssid" ifname wlan0
+  fi
+}
+
+wifi_hidden() {
+  need nmcli
+  profile="${1:-}"
+  hidden="${2:-yes}"
+  if [ -z "$profile" ]; then
+    printf 'Profile name: '
+    read -r profile
+  fi
+  case "$hidden" in
+    yes|true|1|on) hidden=yes ;;
+    no|false|0|off) hidden=no ;;
+    *)
+      printf 'hidden value must be yes or no\n' >&2
+      exit 2
+      ;;
+  esac
+
+  nmcli connection modify "$profile" 802-11-wireless.hidden "$hidden" connection.interface-name wlan0
+}
+
+bt_prepare() {
+  need bluetoothctl
+  rfkill unblock bluetooth 2>/dev/null || true
+  systemctl start bluetooth.service 2>/dev/null || true
+  bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
+power on
+quit
+EOF
+}
+
+bt_agent_prepare() {
+  need bluetoothctl
+  rfkill unblock bluetooth 2>/dev/null || true
+  systemctl start bluetooth.service 2>/dev/null || true
+  bluetoothctl --timeout 8 >/dev/null 2>&1 <<'EOF' || true
+power on
+agent on
+default-agent
+pairable on
+quit
+EOF
+}
+
+bt_info() {
+  bt_prepare
+  bluetoothctl --timeout 5 show
+}
+
+bt_reset() {
+  need bluetoothctl
+  killall -9 bluetoothctl btmgmt hcitool timeout 2>/dev/null || true
+  rfkill unblock bluetooth 2>/dev/null || true
+  systemctl restart bluetooth.service
+  sleep 2
+  bt_prepare
+  bt_info
+}
+
+bt_scan() {
+  seconds="${1:-15}"
+  case "$seconds" in
+    ''|*[!0-9]*)
+      printf 'scan seconds must be a positive integer\n' >&2
+      exit 2
+      ;;
+  esac
+  [ "$seconds" -gt 0 ] || {
+    printf 'scan seconds must be greater than zero\n' >&2
+    exit 2
+  }
+
+  bt_prepare
+  bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
+scan off
+quit
+EOF
+  printf 'Scanning for Bluetooth devices for %s seconds...\n' "$seconds"
+  bluetoothctl --timeout "$seconds" scan on
+  bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
+scan off
+quit
+EOF
+  printf '\nKnown devices:\n'
+  bluetoothctl --timeout 5 devices
+}
+
+bt_devices() {
+  bt_prepare
+  bluetoothctl --timeout 5 devices
+}
+
+bt_pair() {
+  mac="${1:-}"
+  if [ -z "$mac" ]; then
+    printf 'Bluetooth MAC: '
+    read -r mac
+  fi
+  bt_agent_prepare
+  bluetoothctl --timeout 60 <<EOF
+power on
+agent on
+default-agent
+pairable on
+pair $mac
+trust $mac
+connect $mac
+quit
+EOF
+}
+
+bt_connect() {
+  mac="${1:-}"
+  if [ -z "$mac" ]; then
+    printf 'Bluetooth MAC: '
+    read -r mac
+  fi
+  bt_prepare
+  bluetoothctl --timeout 20 <<EOF
+power on
+connect $mac
+quit
+EOF
+}
+
+menu() {
+  cat <<'EOF'
+PocketCHIP Connect
+
+1 Wi-Fi TUI
+2 Wi-Fi list
+3 Wi-Fi connect
+4 Wi-Fi hidden connect
+5 Wi-Fi set profile hidden
+6 Bluetooth TUI
+7 Bluetooth scan
+8 Bluetooth reset
+9 Bluetooth pair/connect
+
+Choice:
+EOF
+  read -r choice
+  case "$choice" in
+    1) exec nmtui ;;
+    2) wifi_list ;;
+    3) wifi_connect ;;
+    4) wifi_connect --hidden ;;
+    5) wifi_hidden ;;
+    6) exec bluetoothctl ;;
+    7) bt_scan ;;
+    8) bt_reset ;;
+    9) bt_pair ;;
+    *) usage; exit 2 ;;
+  esac
+}
+
+cmd="${1:-menu}"
+shift || true
+case "$cmd" in
+  menu) menu ;;
+  wifi) exec nmtui ;;
+  wifi-list) wifi_list ;;
+  wifi-connect) wifi_connect "$@" ;;
+  wifi-hidden) wifi_hidden "$@" ;;
+  bt) exec bluetoothctl ;;
+  bt-info) bt_info ;;
+  bt-reset) bt_reset ;;
+  bt-scan) bt_scan "$@" ;;
+  bt-devices) bt_devices ;;
+  bt-pair) bt_pair "$@" ;;
+  bt-connect) bt_connect "$@" ;;
+  -h|--help|help) usage ;;
+  *) usage; exit 2 ;;
+esac
