@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+root_helper=/usr/local/sbin/pocketchip-power-root
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -104,10 +106,26 @@ wifi_hidden() {
   nmcli connection modify "$profile" 802-11-wireless.hidden "$hidden" connection.interface-name wlan0
 }
 
+rootctl() {
+  if [ -x "$root_helper" ] && command -v sudo >/dev/null 2>&1; then
+    sudo -n "$root_helper" "$@"
+    return
+  fi
+  return 1
+}
+
+bt_power_on() {
+  rfkill unblock bluetooth 2>/dev/null || true
+  if ! systemctl is-active --quiet bluetooth.service 2>/dev/null; then
+    rootctl bluetooth-on >/dev/null 2>&1 ||
+      systemctl --no-ask-password start bluetooth.service >/dev/null 2>&1 ||
+      true
+  fi
+}
+
 bt_prepare() {
   need bluetoothctl
-  rfkill unblock bluetooth 2>/dev/null || true
-  systemctl start bluetooth.service 2>/dev/null || true
+  bt_power_on
   bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
 power on
 quit
@@ -116,8 +134,7 @@ EOF
 
 bt_agent_prepare() {
   need bluetoothctl
-  rfkill unblock bluetooth 2>/dev/null || true
-  systemctl start bluetooth.service 2>/dev/null || true
+  bt_power_on
   bluetoothctl --timeout 8 >/dev/null 2>&1 <<'EOF' || true
 power on
 agent on
@@ -135,8 +152,9 @@ bt_info() {
 bt_reset() {
   need bluetoothctl
   killall -9 bluetoothctl btmgmt hcitool timeout 2>/dev/null || true
-  rfkill unblock bluetooth 2>/dev/null || true
-  systemctl restart bluetooth.service
+  rootctl bluetooth-restart >/dev/null 2>&1 ||
+    systemctl --no-ask-password restart bluetooth.service >/dev/null 2>&1 ||
+    true
   sleep 2
   bt_prepare
   bt_info

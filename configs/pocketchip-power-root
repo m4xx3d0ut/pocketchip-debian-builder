@@ -13,6 +13,9 @@ Usage:
   pocketchip-power-root normal
   pocketchip-power-root radios-off
   pocketchip-power-root radios-on
+  pocketchip-power-root bluetooth-off
+  pocketchip-power-root bluetooth-on
+  pocketchip-power-root bluetooth-restart
   pocketchip-power-root stopx
   pocketchip-power-root reboot
   pocketchip-power-root poweroff
@@ -164,6 +167,10 @@ radios_off() {
   nmcli radio wifi off >/dev/null 2>&1 || true
   rfkill block wifi 2>/dev/null || true
 
+  bluetooth_off
+}
+
+bluetooth_off() {
   if command -v bluetoothctl >/dev/null 2>&1; then
     bluetoothctl --timeout 5 >/dev/null 2>&1 <<'EOF' || true
 scan off
@@ -179,6 +186,10 @@ radios_on() {
   rfkill unblock wifi 2>/dev/null || true
   nmcli radio wifi on >/dev/null 2>&1 || true
 
+  bluetooth_on
+}
+
+bluetooth_on() {
   rfkill unblock bluetooth 2>/dev/null || true
   systemctl start bluetooth.service >/dev/null 2>&1 || true
   if command -v bluetoothctl >/dev/null 2>&1; then
@@ -187,6 +198,12 @@ power on
 quit
 EOF
   fi
+}
+
+bluetooth_restart() {
+  bluetooth_off
+  sleep 1
+  bluetooth_on
 }
 
 low_enter() {
@@ -214,6 +231,9 @@ case "$cmd" in
   normal) normal ;;
   radios-off) radios_off ;;
   radios-on) radios_on ;;
+  bluetooth-off) bluetooth_off ;;
+  bluetooth-on) bluetooth_on ;;
+  bluetooth-restart) bluetooth_restart ;;
   stopx) stopx ;;
   reboot) systemctl reboot ;;
   poweroff) systemctl poweroff ;;

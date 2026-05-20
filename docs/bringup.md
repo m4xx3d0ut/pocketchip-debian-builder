@@ -193,13 +193,27 @@ pocketchip-connect bt-pair 'AA:BB:CC:DD:EE:FF'
 
 The image installs `polkitd` plus a PocketCHIP policy rule so the configured
 user can manage NetworkManager from the i3/tty TUIs as a member of `netdev`.
-The user is also added to `bluetooth` when that group exists. If `nmtui` reports
+The user is also added to `bluetooth` when that group exists. Bluetooth startup
+and reset actions use the narrow `pocketchip-power-root` helper so the TUI does
+not need to prompt for systemd unit-management authorization. If `nmtui` reports
 authorization errors, check:
 
 ```sh
 systemctl is-active polkit.service
 id
 nmcli general permissions
+```
+
+If `pocketchip-connect bt-info` starts BlueZ but reports no default controller,
+the TUI path is working and the remaining issue is HCI/controller attachment.
+Capture:
+
+```sh
+systemctl is-active bluetooth.service
+rfkill list
+ls -la /sys/class/bluetooth
+btmgmt info
+lsmod | grep -Ei 'bluetooth|hci|rtl|8723'
 ```
 
 Power helpers:

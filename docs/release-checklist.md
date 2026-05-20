@@ -37,8 +37,11 @@ Use this before tagging or uploading public artifacts.
   cat /sys/devices/system/cpu/vulnerabilities/spectre_v2
   ```
 
-- Confirm NetworkManager Wi-Fi, Bluetooth tools, SSH, i3, touch calibration,
-  battery status, brightness, volume, and power menu still work.
+- Confirm NetworkManager Wi-Fi, SSH, i3, touch calibration, battery status,
+  brightness, volume, and power menu still work.
+- Confirm Bluetooth helper commands do not prompt for systemd authorization.
+  If `/sys/class/bluetooth` is empty or `btmgmt info` reports zero controllers,
+  document Bluetooth HCI/controller bring-up as unresolved for that release.
 
 ## Optional Splash Asset
 
