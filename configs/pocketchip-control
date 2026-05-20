@@ -56,13 +56,6 @@ status_alert() {
       *) kill -USR1 "$pid" 2>/dev/null || true ;;
     esac
   fi
-
-  if command -v pgrep >/dev/null 2>&1; then
-    for pid in $(pgrep -u "$uid" -f '/usr/local/bin/pocketchip-status' 2>/dev/null || true); do
-      [ "$pid" != "$$" ] || continue
-      kill -USR1 "$pid" 2>/dev/null || true
-    done
-  fi
 }
 
 backlight_dir() {
