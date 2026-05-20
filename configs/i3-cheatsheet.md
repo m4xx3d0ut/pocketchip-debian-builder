@@ -1,125 +1,124 @@
-# PocketCHIP i3 Cheat Sheet
+# PocketCHIP Quick Reference
 
 Mod is Alt on the PocketCHIP keyboard.
 
-## i3
+## Start Here
 
-- Mod+Enter: terminal
-- Mod+w: Firefox ESR
-- Mod+Shift+w: lightweight browser if installed
-- Mod+Left / Mod+Right: browser back/forward, otherwise workspace prev/next
-- Mod+Up / Mod+Down: browser page up/down
-- Mod+u: focus browser URL bar, including from browser fullscreen
-- Mod+r: browser reload
-- Mod+f: fullscreen; sends browser F11 when a browser is focused
-- Mod+Shift+f: browser fullscreen alias
-- Mod+m: PocketCHIP menu
-- Mod+i: system about/support card
-- Mod+d: PocketCHIP app launcher
-- Mod+x: power menu
-- Mod+Esc: screen off + password lock
-- Mod+Shift+x: low-power lock
-- Mod+h/j/k/l: focus left/down/up/right
-- Mod+Shift+h/j/k/l: move window left/down/up/right
-- Mod+1..4: switch workspace
-- Mod+Shift+1..4: move window to workspace
-- Mod+Space: switch tiling/floating focus
-- Mod+Shift+Space: toggle floating
-- Mod+Shift+q: close window
-- Mod+n: Wi-Fi TUI
-- Mod+b: Bluetooth TUI
-- Mod+Shift+n: PocketCHIP connect menu
-- Mod+Shift+p: CPU performance mode
-- Mod+c: controls menu
-- Mod+v: ALSA volume mixer
-- Mod+Shift+v: brightness TUI
-- Mod+- / Mod+=: brightness down/up
-- Mod+, / Mod+.: volume down/up
-- Mod+/: toggle audio output
-- Mod+Shift+t: touchscreen calibration presets
-- Mod+Shift+/: this cheat sheet
-- Mod+Shift+r: reload i3 config
-- Mod+Shift+e: exit i3
+| Key | Action |
+| --- | --- |
+| Mod+Enter | terminal |
+| Mod+m or Mod+d | PocketCHIP app menu |
+| Mod+Shift+/ | this cheat sheet |
+| Mod+i | system about/support card |
+| Mod+w | Firefox ESR |
+| Mod+n / Mod+b | Wi-Fi / Bluetooth TUI |
+| Mod+c | controls menu |
+| Mod+x | power menu |
+| Mod+Esc | screen off + password lock |
 
-About card:
+Menu entries are grouped for dmenu filtering: `app:`, `net:`, `ctl:`, `sys:`,
+and `power:`.
 
-- Mod+i: open system about/support card
-- j/k: scroll line down/up
-- Space/b: scroll page down/up
-- q: close
+## Daily Keys
 
-i3 bar colors:
+| Key | Action |
+| --- | --- |
+| Mod+h/j/k/l | focus left/down/up/right |
+| Mod+Shift+h/j/k/l | move window left/down/up/right |
+| Mod+1..4 | switch workspace |
+| Mod+Shift+1..4 | move window to workspace |
+| Mod+f | fullscreen; sends browser F11 when browser is focused |
+| Mod+Shift+f | browser fullscreen alias |
+| Mod+Space | switch tiling/floating focus |
+| Mod+Shift+Space | toggle floating |
+| Mod+Shift+q | close window |
+| Mod+Shift+r | reload i3 config |
+| Mod+Shift+e | exit i3 |
 
-- green: healthy/connected
-- yellow: warning/medium
-- red: low/off/high load
-- cyan: charging/time
+## Browser And Gestures
 
-## Touch Gestures
+| Key or Gesture | Action |
+| --- | --- |
+| Mod+w | Firefox ESR |
+| Mod+Shift+w | lightweight browser if installed |
+| Mod+Left / Mod+Right | browser back/forward, otherwise workspace prev/next |
+| Mod+Up / Mod+Down | browser page up/down |
+| Mod+u | focus browser URL bar, including from browser fullscreen |
+| Mod+r | browser reload |
+| Left/right edge swipe | browser back/forward |
+| Vertical browser swipe | page up/down |
 
-- Swipe from left edge to right: previous workspace
-- Swipe from right edge to left: next workspace
-- In browser, horizontal swipes map to back/forward
-- In browser, vertical swipes map to page up/down
-- Outside browser, bottom/top gestures remain menu/navigation oriented
+Touch outside the browser is best treated as coarse navigation; normal i3 use is
+keyboard-first.
 
-Touch presets:
+## Controls
 
-- pocketchip-touch-calibrate menu
-- pocketchip-touch-calibrate edge-fit
-- pocketchip-touch-calibrate invert-xy
-- pocketchip-touch-calibrate edge-fit-y
-- pocketchip-touch-calibrate edge-fit-strong
-- pocketchip-touch-calibrate learn-edges
-- pocketchip-touch-calibrate status
-
-## CLI
-
-- starti3: launch i3 from the login shell
-- tm: attach/create tmux session named pocketchip
-- wifi: open nmtui
-- bt: open bluetoothctl
-- connect: PocketCHIP Wi-Fi/Bluetooth helper
-- web: Firefox ESR
-- web-light: lightweight browser if installed
-- pocketchip-about: system about/support card
-- pocketchip-power menu: lock/logout/reboot/poweroff menu
-- pocketchip-control menu: brightness/audio controls
-- pocketchip-control brightness: brightness TUI
-- pocketchip-control volume: ALSA mixer TUI
-- cheat: read this file
-- tmux-mouse: toggle tmux mouse mode
-
-## Brightness and Audio
-
-- pocketchip-control status
-- pocketchip-control brightness-up
-- pocketchip-control brightness-down
-- pocketchip-control brightness-set LEVEL
-- pocketchip-control volume-up
-- pocketchip-control volume-down
-- pocketchip-control volume-mute
-- pocketchip-control volume-on
-- pocketchip-control volume-off
+| Key | Action |
+| --- | --- |
+| Mod+c | controls menu |
+| Mod+v | ALSA volume mixer |
+| Mod+Shift+v | brightness TUI |
+| Mod+- / Mod+= | brightness down/up |
+| Mod+, / Mod+. | volume down/up |
+| Mod+/ | toggle audio output |
+| Mod+Shift+t | touchscreen calibration presets |
 
 ## Power
 
-- pocketchip-power lock: password lock, screen off, wake by power button or charger
-- pocketchip-power low-lock: lock plus Wi-Fi/Bluetooth down and low CPU cap
-- pocketchip-power performance: switch CPU governor to performance
-- pocketchip-power normal: restore CPU cap/governor and turn radios back on
-- pocketchip-power screen-off: turn display off now
-- pocketchip-power screen-on: turn display on now
+| Command | Action |
+| --- | --- |
+| pocketchip-power menu | lock/logout/reboot/poweroff menu |
+| pocketchip-power lock | password lock; screen off; wake by power or charger |
+| pocketchip-power low-lock | lock plus Wi-Fi/Bluetooth down and low CPU cap |
+| pocketchip-power performance | switch CPU governor to performance |
+| pocketchip-power normal | restore CPU cap/governor and radios |
+| pocketchip-power screen-off | turn display off now |
+| pocketchip-power screen-on | turn display on now |
 
-## Wi-Fi and Bluetooth
+## Network And Bluetooth
 
-- pocketchip-connect menu
-- pocketchip-connect wifi-list
-- pocketchip-connect wifi-connect SSID
-- pocketchip-connect wifi-connect --hidden SSID
-- pocketchip-connect wifi-hidden PROFILE yes
-- pocketchip-connect bt-info
-- pocketchip-connect bt-reset
-- pocketchip-connect bt-scan 15
-- pocketchip-connect bt-devices
-- pocketchip-connect bt-pair MAC
+| Command | Action |
+| --- | --- |
+| pocketchip-connect menu | combined connection menu |
+| pocketchip-connect wifi-list | scan Wi-Fi |
+| pocketchip-connect wifi-connect SSID | connect to visible Wi-Fi |
+| pocketchip-connect wifi-connect --hidden SSID | connect to hidden Wi-Fi |
+| pocketchip-connect wifi-hidden PROFILE yes | mark profile as hidden |
+| pocketchip-connect bt-info | Bluetooth state |
+| pocketchip-connect bt-reset | reset Bluetooth service/radio |
+| pocketchip-connect bt-scan 15 | scan for 15 seconds |
+| pocketchip-connect bt-devices | known Bluetooth devices |
+| pocketchip-connect bt-pair MAC | pair device |
+
+## Touch Calibration
+
+| Command | Action |
+| --- | --- |
+| pocketchip-touch-calibrate menu | choose preset |
+| pocketchip-touch-calibrate edge-fit | default stylus-style edge fit |
+| pocketchip-touch-calibrate edge-fit-y | adjust vertical reach |
+| pocketchip-touch-calibrate edge-fit-strong | stronger edge compensation |
+| pocketchip-touch-calibrate invert-xy | invert both axes |
+| pocketchip-touch-calibrate learn-edges | interactive edge sampling |
+| pocketchip-touch-calibrate status | show active config |
+
+## CLI Aliases
+
+| Alias | Action |
+| --- | --- |
+| starti3 | launch i3 from login shell |
+| tm | attach/create tmux session named pocketchip |
+| wifi | open nmtui |
+| bt | open bluetoothctl |
+| connect | PocketCHIP Wi-Fi/Bluetooth helper |
+| web | Firefox ESR |
+| web-light | lightweight browser if installed |
+| cheat | read this file |
+| tmux-mouse | toggle tmux mouse mode |
+
+## About Card And Bar
+
+About card: `Mod+i`, `j/k` scroll line, `Space/b` scroll page, `q` close.
+
+Bar colors: green healthy/connected, yellow warning/medium, red low/off/high
+load, cyan charging/time.

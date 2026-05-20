@@ -7,64 +7,67 @@ term() {
 
 run_choice() {
   case "$1" in
-    terminal|term)
+    "app: terminal"|terminal|term)
       term
       ;;
-    tmux)
+    "app: tmux"|tmux)
       term -e tmux new-session -A -s pocketchip
       ;;
-    nvim|neovim|edit)
+    "app: nvim"|nvim|neovim|edit)
       term -e nvim
       ;;
-    htop|top)
+    "app: htop"|htop|top)
       term -e htop
       ;;
-    browser|web)
+    "app: browser"|browser|web)
       exec pocketchip-browser
       ;;
-    browser-light|web-light|netsurf)
+    "app: browser-light"|browser-light|web-light|netsurf)
       exec pocketchip-browser light
       ;;
-    wifi)
+    "net: wifi"|wifi)
       term -e pocketchip-connect wifi
       ;;
-    bluetooth|bt)
+    "net: bluetooth"|bluetooth|bt)
       term -e pocketchip-connect bt
       ;;
-    touch)
+    "net: connect"|connect|network)
+      term -e pocketchip-connect menu
+      ;;
+    "ctl: touch"|touch)
       term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu
       ;;
-    controls)
+    "ctl: controls"|controls)
       term -geometry 74x16 -e pocketchip-control menu
       ;;
-    brightness)
+    "ctl: brightness"|brightness)
       term -geometry 74x14 -e pocketchip-control brightness
       ;;
-    volume|mixer|audio)
+    "ctl: volume"|volume|mixer|audio)
       term -geometry 74x18 -e pocketchip-control volume
       ;;
-    about|info|system)
+    "sys: about"|about|info|system)
       term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
       ;;
-    help|cheat|cheatsheet)
+    "sys: help"|help|cheat|cheatsheet)
       term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
       ;;
-    status)
+    "sys: status"|status)
       term -hold -e pocketchip-status
       ;;
-    power)
+    "power: menu"|power)
       exec pocketchip-power menu
       ;;
-    lock)
+    "power: lock"|lock)
       exec pocketchip-power lock
       ;;
-    low-power|low-power-lock)
+    "power: low-lock"|low-power|low-power-lock|low-lock)
       exec pocketchip-power low-lock
       ;;
-    performance|perf)
+    "power: performance"|performance|perf)
       exec pocketchip-power performance
       ;;
-    radios-on|normal)
+    "power: normal"|radios-on|normal)
       exec pocketchip-power normal
       ;;
     *)
@@ -78,26 +81,27 @@ if [ "${1:-}" ]; then
   run_choice "$1"
 fi
 
-choices='terminal
-tmux
-nvim
-htop
-browser
-browser-light
-wifi
-bluetooth
-touch
-controls
-brightness
-volume
-about
-help
-status
-power
-lock
-low-power
-performance
-radios-on'
+choices='app: terminal
+app: tmux
+app: nvim
+app: htop
+app: browser
+app: browser-light
+net: wifi
+net: bluetooth
+net: connect
+ctl: controls
+ctl: brightness
+ctl: volume
+ctl: touch
+sys: status
+sys: about
+sys: help
+power: menu
+power: lock
+power: low-lock
+power: performance
+power: normal'
 
 if [ -n "${DISPLAY:-}" ] && command -v dmenu >/dev/null 2>&1; then
   choice="$(printf '%s\n' "$choices" | dmenu -i -p chip)"

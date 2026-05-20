@@ -63,7 +63,7 @@ time, and optional asset knobs documented in `configs/local.env.example` and
 `docs/bringup.md`. Use `POCKETCHIP_ROOT_AUTH=password` plus
 `POCKETCHIP_ROOT_PASSWORD=...` only for intentional lab/recovery images.
 The optional splash path uses static images; video boot animation support is
-intentionally not included.
+intentionally not included, it was wonky.
 
 On Debian/Ubuntu hosts, the expected dependencies are:
 
