@@ -33,7 +33,7 @@ bindsym $mod+m exec pocketchip-menu
 bindsym $mod+x exec pocketchip-power menu
 bindsym $mod+Escape exec pocketchip-power lock
 bindsym $mod+Shift+x exec pocketchip-power low-lock
-bindsym $mod+Shift+c exec pocketchip-power caffeine
+bindsym $mod+Shift+c exec --no-startup-id pocketchip-power caffeine
 bindsym $mod+Shift+p exec pocketchip-power performance
 bindsym $mod+n exec $term -e pocketchip-connect wifi
 bindsym $mod+b exec $term -e pocketchip-connect bt
