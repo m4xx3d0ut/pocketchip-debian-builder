@@ -1,16 +1,15 @@
 # FEL Path
 
-The next boot milestone is FEL-loaded mainline U-Boot plus the existing USB
-rootfs. This keeps stock NAND intact while we prove USB storage, the Debian
-kernel, and the root filesystem.
+The stable boot path is FEL-loaded mainline U-Boot plus the existing USB rootfs.
+This keeps stock NAND intact while we test USB storage, the Debian kernel, and
+the root filesystem.
 
-## Why Not NAND Yet
+## NAND Status
 
-Direct NAND writing is not the next step. The current Debian artifact is an
-ext4 USB-rootfs image, while CHIP NAND flashing expects a CHIP-specific SPL/ECC
-layout and a UBIFS/UBI root filesystem. The legacy Project CHIP Crumbs tooling
-can write NAND, but it is a destructive full-flash path. Keep stock NAND as the
-recovery anchor until Debian boots cleanly through FEL.
+The repo now has an experimental NAND path, but direct NAND writing remains a
+destructive full-flash operation. It writes a CHIP-specific SPL/ECC layout and a
+UBIFS/UBI root filesystem. Use the USB/FEL path for normal development and read
+`docs/nand.md` before any NAND write.
 
 ## Build Mainline U-Boot
 

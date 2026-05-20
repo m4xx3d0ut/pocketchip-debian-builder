@@ -20,6 +20,8 @@ Issues to keep in mind:
 Recommended use:
 
 - Keep it as `legacy recovery`.
-- Use `../upstreams/CHIP-tools` for controlled NAND/recovery experiments.
+- Use `docs/nand.md` and `scripts/fel-nand.py` for controlled Debian NAND
+  experiments.
+- Use `../upstreams/CHIP-tools` as the reference implementation and recovery
+  baseline.
 - Keep mainline Debian development in this repo's scripts and docs.
-
