@@ -355,7 +355,8 @@ screensaver and DPMS timeouts are 600 seconds. The kernel exposes `s2idle`, but
 daily power saving should use `pocketchip-power low-lock` until suspend/resume
 has been tested on the target device. Use `pocketchip-power caffeine` or
 `Mod+Shift+c` to temporarily keep the screen on and disable X idle blanking;
-toggle it again to restore the 600 second policy.
+toggle it again to restore the 600 second policy. The i3 bar shows `caf on`
+while caffeine is active.
 
 ## Touch and Battery
 

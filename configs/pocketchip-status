@@ -140,6 +140,18 @@ load_status() {
   fi
 }
 
+caffeine_status() {
+  caffeine_state="/tmp/pocketchip-caffeine-$(id -u 2>/dev/null || printf 0)"
+  if [ -e "$caffeine_state" ]; then
+    text='caf on'
+    color=$color_warn
+    return 0
+  fi
+
+  text=''
+  color=$color_text
+}
+
 time_status() {
   text="$(date '+%H:%M')"
   color=$color_dim
@@ -168,6 +180,9 @@ emit_status() {
   load_status
   load_text=$text
   load_color=$color
+  caffeine_status
+  caffeine_text=$text
+  caffeine_color=$color
   time_status
   time_text=$text
   time_color=$color
@@ -181,6 +196,10 @@ emit_status() {
   printf ','
   json_block "$load_text" "$load_color"
   printf ','
+  if [ -n "$caffeine_text" ]; then
+    json_block "$caffeine_text" "$caffeine_color"
+    printf ','
+  fi
   json_block "$time_text" "$time_color"
   printf '],\n'
 }

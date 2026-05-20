@@ -123,5 +123,5 @@ keyboard-first.
 
 About card: `Mod+i`, `j/k` scroll line, `Space/b` scroll page, `q` close.
 
-Bar colors: green healthy/connected, yellow warning/medium, red low/off/high
-load, cyan charging/time.
+Bar colors: green healthy/connected, yellow warning/medium/caffeine, red
+low/off/high load, cyan charging/time.
