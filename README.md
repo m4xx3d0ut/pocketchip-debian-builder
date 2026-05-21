@@ -3,9 +3,9 @@
 *(Unofficial a.k.a. ***"PocketTRIX"***)*
 
 PocketCHIP Trixie is an unofficial Debian 13/Trixie image and builder for
-PocketCHIP. It provides a reproducible rootfs build, mainline U-Boot/FEL bring-up
-tools, PocketCHIP hardware defaults, an i3 handheld environment, and an
-experimental NAND/SLC rescue install path.
+PocketCHIP. It provides a reproducible Debian rootfs build, mainline U-Boot/FEL
+bring-up tools, PocketCHIP hardware defaults, an i3 handheld environment, and an
+experimental NAND/SLC rescue install path using patched legacy CHIP U-Boot.
 
 This is an unofficial community project. It is not affiliated with, endorsed by,
 or supported by Next Thing Co., PocketCHIP.co, or the Debian Project.
@@ -16,6 +16,19 @@ booted through FEL and mainline U-Boot. The NAND/SLC path has also been
 validated on one Toshiba 4G MLC PocketCHIP, but remains experimental until more
 hardware variants are tested. USB/FEL remains the safest development loop for
 kernel, display, keyboard, and userland work.
+
+## Terminology
+
+This project is best described as an unofficial Debian 13/Trixie-based
+PocketCHIP image and builder.
+
+- Debian: the root filesystem is built from Debian 13/Trixie `armhf` packages.
+  It is a Debian-based device image, with PocketCHIP-specific integration.
+- Kernel: the image uses Debian's packaged `linux-image-armmp` kernel, which is
+  mainline-based but carries Debian configuration and packaging.
+- U-Boot for FEL/USB: the USB development path uses mainline U-Boot.
+- U-Boot for NAND: the tested NAND/SLC path uses patched legacy CHIP U-Boot,
+  because NAND boot support still depends on CHIP-specific legacy code.
 
 ## Quick Start
 
@@ -108,9 +121,11 @@ make publish-check
 ## Current Target
 
 - OS: Debian 13/trixie `armhf`
-- Kernel: Debian `linux-image-armmp`
-- Boot: FEL-loaded U-Boot, merged PocketCHIP DTB, USB rootfs by label
-  `pocketroot`, plus an experimental NAND/SLC rescue installer path.
+- Kernel: Debian `linux-image-armmp`, a Debian-packaged mainline-based ARM
+  kernel.
+- Boot: mainline U-Boot for FEL/USB bring-up with USB rootfs by label
+  `pocketroot`; patched legacy CHIP U-Boot for the experimental NAND/SLC rescue
+  installer path.
 - UI: Xorg plus `i3`
 - Userland: `zsh`, Oh My Zsh, `tmux`, `neovim`, and basic CLI/admin tools
 - Network: NetworkManager, OpenSSH server/client, autossh, mosh, bluez, and
