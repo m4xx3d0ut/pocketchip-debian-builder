@@ -113,7 +113,9 @@ fi
 [ -n "$root_auth" ] || root_auth='--'
 [ -n "$timezone" ] || timezone='--'
 
-clear 2>/dev/null || true
+if [ -t 1 ]; then
+  clear 2>/dev/null || true
+fi
 cat <<'EOF'
 PocketCHIP System
 =================
