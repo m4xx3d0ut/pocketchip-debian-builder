@@ -197,4 +197,12 @@
 			linux,default-trigger = "default-on";
 		};
 	};
+
+	fragment@8 {
+		target = <&uart3>;
+
+		__overlay__ {
+			uart-has-rtscts;
+		};
+	};
 };

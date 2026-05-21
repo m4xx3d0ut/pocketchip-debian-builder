@@ -206,7 +206,7 @@ nmcli general permissions
 
 If `pocketchip-connect bt-info` starts BlueZ but reports no default controller,
 the TUI path is working and the remaining issue is HCI/controller attachment.
-Capture:
+See `docs/bluetooth.md` for the current Realtek H5 bring-up status. Capture:
 
 ```sh
 systemctl is-active bluetooth.service

@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+export PATH
+
 root_helper=/usr/local/sbin/pocketchip-power-root
 
 usage() {

@@ -1,4 +1,6 @@
-# PocketCHIP Trixie
+# PocketCHIP - Debian 13 Trixie
+
+*(Unofficial a.k.a. ***"PocketTRIX"***)*
 
 PocketCHIP Trixie is an unofficial Debian 13/Trixie image and builder for
 PocketCHIP. It provides a reproducible rootfs build, mainline U-Boot/FEL bring-up
@@ -9,10 +11,11 @@ This is an unofficial community project. It is not affiliated with, endorsed by,
 or supported by Next Thing Co., PocketCHIP.co, or the Debian Project.
 “PocketCHIP” and “C.H.I.P.” are used only to identify compatible hardware.
 
-The stable milestone is a Debian 13/trixie USB root filesystem booted through
-FEL and mainline U-Boot. An experimental NAND path now exists, but USB/FEL
-remains the safest development loop for kernel, display, keyboard, and userland
-work.
+The stable development milestone is a Debian 13/trixie USB root filesystem
+booted through FEL and mainline U-Boot. The NAND/SLC path has also been
+validated on one Toshiba 4G MLC PocketCHIP, but remains experimental until more
+hardware variants are tested. USB/FEL remains the safest development loop for
+kernel, display, keyboard, and userland work.
 
 ## Quick Start
 
@@ -28,18 +31,20 @@ sudo ./scripts/build-usb-image.sh
 sudo ./scripts/fel-usb-boot-verify.py
 ```
 
-Experimental NAND commands are documented in `docs/nand.md`. The short form is:
+Experimental NAND commands are documented in `docs/nand.md`. The currently
+tested Toshiba 4G MLC SLC-mode rescue flow is:
 
 ```sh
 ./scripts/nand-preflight.sh
-./scripts/build-legacy-uboot.sh
-sudo ./scripts/build-nand-image.sh
-sudo ./scripts/fel-nand.py probe-legacy
-CONFIRM_NAND_WRITE=YES make nand-flash-legacy
+make nand-image-mlc-pc-slc
+make nand-rescue-initramfs-usb-slc
+USB_MOUNT=/mnt/pocketchip-rescue-usb make nand-rescue-usb-payload-slc
+CONFIRM_NAND_WRITE=YES make nand-flash-bootloader-slc
+CONFIRM_NAND_WRITE=YES make nand-rescue-install-usb-slc
 ```
 
-The final command erases internal NAND and intentionally requires an explicit
-confirmation variable plus the script-level destructive-write guard.
+The flash/install commands erase internal NAND and intentionally require an
+explicit confirmation variable plus script-level destructive-write guards.
 
 Optional per-image settings live in `configs/local.env`, which is gitignored
 because it may contain passwords or Wi-Fi credentials. Start from:
@@ -63,7 +68,7 @@ time, and optional asset knobs documented in `configs/local.env.example` and
 `docs/bringup.md`. Use `POCKETCHIP_ROOT_AUTH=password` plus
 `POCKETCHIP_ROOT_PASSWORD=...` only for intentional lab/recovery images.
 The optional splash path uses static images; video boot animation support is
-intentionally not included, it was wonky.
+intentionally not included because it was unreliable on this hardware.
 
 On Debian/Ubuntu hosts, the expected dependencies are:
 
@@ -96,23 +101,46 @@ make publish-check
 - `dts/`: PocketCHIP mainline device-tree overlay source.
 - `configs/`: package list, initramfs module list, and default user/desktop
   configuration files.
-- `docs/`: bring-up notes, acceptance checks, release checklist, NAND notes,
-  and legacy flashing review.
+- `docs/`: bring-up notes, acceptance checks, release checklist, Bluetooth HCI
+  notes, NAND notes, and legacy flashing review.
 - `../upstreams/`: local clones of Project CHIP Crumbs repositories.
 
 ## Current Target
 
 - OS: Debian 13/trixie `armhf`
 - Kernel: Debian `linux-image-armmp`
-- Boot: FEL-loaded U-Boot, merged PocketCHIP DTB, USB rootfs by label `pocketroot`
+- Boot: FEL-loaded U-Boot, merged PocketCHIP DTB, USB rootfs by label
+  `pocketroot`, plus an experimental NAND/SLC rescue installer path.
 - UI: Xorg plus `i3`
 - Userland: `zsh`, Oh My Zsh, `tmux`, `neovim`, and basic CLI/admin tools
 - Network: NetworkManager, OpenSSH server/client, autossh, mosh, bluez, and
-  RTL8723BS firmware support. The PocketCHIP Wi-Fi module is 2.4 GHz only.
+  RTL8723BS Wi-Fi/Bluetooth firmware support. The PocketCHIP Wi-Fi module is
+  2.4 GHz only. Bluetooth HCI exposure and validation are documented in
+  `docs/bluetooth.md`.
 - Power: DPMS idle lock, i3 power menu, and a conservative low-power lock mode
   that blanks/locks the display and can turn radios down.
 - Keyboard: original TCA8418 matrix plus PocketCHIP X/console Fn layers for
   brackets, braces, function keys, Home/End, and Page Up/Down.
+
+## Hardware Support Status
+
+This status reflects the live NAND/SLC validation run on May 21, 2026, using
+Debian `6.12.86+deb13-armmp` on a Toshiba 4G MLC PocketCHIP.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Boot and storage | Supported on tested unit | NAND boot reaches Debian 13 from a writable UBIFS rootfs. The autoresized rootfs volume mounted `rw` with about 1.1 GiB free after the balanced image install. |
+| USB/FEL recovery | Supported | FEL boot, USB rootfs bring-up, and USB-sourced NAND rescue install are the safest recovery/development paths. |
+| LCD/display | Supported | The 480x272 PocketCHIP LCD runs through `sun4i-drm`; `/dev/fb0` reports `sun4i-drmdrmfb` and DRM devices are present. |
+| Mali GPU | Accelerated for X/glamor | The `lima` kernel driver is loaded, Mesa DRI/EGL/GLX libraries are installed, `/dev/dri/renderD128` exists, and Xorg reports `glamor X acceleration enabled on Mali400`. This is useful desktop/X acceleration, not a claim of strong 3D, WebGL, or game performance. |
+| Keyboard | Supported | The TCA8418 matrix keyboard works with PocketCHIP-specific console/X keymap layers and i3 bindings. |
+| Touch input | Usable with caveats | The resistive touch panel works as pointer/stylus input, but edge accuracy remains imperfect and should not be treated like a modern multitouch panel. |
+| Wi-Fi | Supported | RTL8723BS SDIO Wi-Fi works through NetworkManager. The radio is 2.4 GHz only. |
+| Bluetooth | Supported | RTL8723BS Bluetooth works through UART3/H5 after enabling `uart-has-rtscts`; `hci0` appears, powers on, and scans nearby devices. |
+| SSH and remote tools | Supported | OpenSSH server, mosh, autossh, serial tools, and field diagnostics are included in the balanced profile. |
+| Audio | Present, needs user-facing test | The `sun4i_codec` ALSA path loads. Playback/recording should be tested before claiming full audio support in a release note. |
+| Battery and power | Basic support | Battery/charger reporting, backlight control, lock/screen-off behavior, zram swap, and i3 power menus are present. There is no proven suspend-to-RAM/S0-style sleep path. |
+| Video decode | Driver present, unvalidated | The `sunxi_cedrus` V4L2 driver loads, but accelerated media decode has not been validated and is not part of the supported user experience yet. |
 
 ## Hardware Notes
 

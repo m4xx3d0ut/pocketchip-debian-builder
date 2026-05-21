@@ -39,9 +39,26 @@ Use this before tagging or uploading public artifacts.
 
 - Confirm NetworkManager Wi-Fi, SSH, i3, touch calibration, battery status,
   brightness, volume, and power menu still work.
+- Confirm display and GPU claims match the tested image:
+
+  ```sh
+  ls -la /dev/dri
+  lsmod | grep -Ei 'lima|sun4i_drm|drm'
+  grep -Ei 'glamor|Mali400|DRI|sun4i-drm' /var/log/Xorg.0.log
+  ```
+
+  The release may claim Mali/Lima X/glamor acceleration only if Xorg reports
+  `glamor X acceleration enabled on Mali400`. Do not claim strong 3D, WebGL,
+  game, or media acceleration without separate tests.
 - Confirm Bluetooth helper commands do not prompt for systemd authorization.
+  Confirm `/proc/device-tree/soc/serial@1c28c00/uart-has-rtscts` exists on the
+  tested image, `/sys/class/bluetooth/hci0` exists, `btmgmt info` reports one
+  controller, and a short `bluetoothctl` scan can discover nearby devices.
   If `/sys/class/bluetooth` is empty or `btmgmt info` reports zero controllers,
   document Bluetooth HCI/controller bring-up as unresolved for that release.
+- Confirm audio and media notes are honest: ALSA driver/module presence is not
+  the same as playback/recording support, and `sunxi_cedrus` module presence is
+  not the same as validated accelerated video decode.
 
 ## Optional Splash Asset
 
