@@ -35,5 +35,8 @@ keycode 113 = Left NoSymbol Home
 keycode 114 = Right NoSymbol End
 keycode 116 = Down NoSymbol Next
 
+clear Mod1
+clear Mod3
 clear Mod5
+add Mod1 = Alt_L Meta_L
 add Mod5 = Mode_switch

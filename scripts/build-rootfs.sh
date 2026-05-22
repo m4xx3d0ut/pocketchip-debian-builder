@@ -641,6 +641,7 @@ install -m 0755 "$repo_root/configs/pocketchip-connect" "$rootfs/usr/local/bin/p
 install -m 0755 "$repo_root/configs/pocketchip-about" "$rootfs/usr/local/bin/pocketchip-about"
 install -m 0755 "$repo_root/configs/pocketchip-browser" "$rootfs/usr/local/bin/pocketchip-browser"
 install -m 0755 "$repo_root/configs/pocketchip-browser-action" "$rootfs/usr/local/bin/pocketchip-browser-action"
+install -m 0755 "$repo_root/configs/pocketchip-layout" "$rootfs/usr/local/bin/pocketchip-layout"
 install -m 0755 "$repo_root/configs/pocketchip-menu" "$rootfs/usr/local/bin/pocketchip-menu"
 install -m 0755 "$repo_root/configs/pocketchip-control" "$rootfs/usr/local/bin/pocketchip-control"
 install -m 0755 "$repo_root/configs/pocketchip-power" "$rootfs/usr/local/bin/pocketchip-power"

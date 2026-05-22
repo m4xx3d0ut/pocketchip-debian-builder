@@ -1,0 +1,66 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+set -eu
+
+if [ -z "${I3SOCK:-}" ]; then
+  i3sock="$(find /tmp -maxdepth 3 -type s -path '/tmp/i3-*/*' -name 'ipc-socket.*' 2>/dev/null | head -n 1 || true)"
+  if [ -n "$i3sock" ]; then
+    export I3SOCK="$i3sock"
+  fi
+fi
+
+usage() {
+  cat <<'EOF'
+Usage: pocketchip-layout desktop-fullscreen
+EOF
+}
+
+i3_cmd() {
+  command -v i3-msg >/dev/null 2>&1 || exit 0
+  i3-msg "$@" >/dev/null
+}
+
+focused_layout_path() {
+  i3-msg -t get_tree | python3 -c '
+import json
+import sys
+
+tree = json.load(sys.stdin)
+
+def walk(node, path):
+    next_path = path + [node]
+    if node.get("focused"):
+        return next_path
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        found = walk(child, next_path)
+        if found:
+            return found
+    return None
+
+path = walk(tree, []) or []
+for node in path:
+    layout = node.get("layout")
+    if layout:
+        print(layout)
+'
+}
+
+desktop_fullscreen() {
+  layouts="$(focused_layout_path || true)"
+  if printf '%s\n' "$layouts" | grep -qx tabbed; then
+    i3_cmd layout splith
+  else
+    i3_cmd layout tabbed
+  fi
+}
+
+cmd="${1:-help}"
+case "$cmd" in
+  desktop-fullscreen)
+    desktop_fullscreen
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac

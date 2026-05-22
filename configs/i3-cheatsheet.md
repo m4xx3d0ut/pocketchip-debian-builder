@@ -28,13 +28,14 @@ and `power:`.
 | Mod+Shift+h/j/k/l | move window left/down/up/right |
 | Mod+1..4 | switch workspace |
 | Mod+Shift+1..4 | move window to workspace |
-| Mod+f | fullscreen; sends browser F11 when browser is focused |
-| Mod+Shift+f | browser fullscreen alias |
+| Mod+f | desktop fullscreen: tabbed layout with i3 bar visible |
+| Mod+Shift+f | browser F11 fullscreen |
 | Mod+Space | switch tiling/floating focus |
 | Mod+Shift+Space | toggle floating |
 | Mod+Shift+q | close window |
 | Mod+Shift+r | reload i3 config |
 | Mod+Shift+e | exit i3 |
+| Mod+Shift+Esc | force exit app/i3 fullscreen |
 
 ## Terminal And SSH
 
@@ -64,11 +65,17 @@ the start of a line. If the terminal itself is wedged, use
 | Mod+Up / Mod+Down | browser page up/down |
 | Mod+u | focus browser URL bar, including from browser fullscreen |
 | Mod+r | browser reload |
+| Mod+f | desktop fullscreen: tabbed layout with i3 bar visible |
+| Mod+Shift+f | browser F11 fullscreen |
 | Left/right edge swipe | browser back/forward |
 | Vertical browser swipe | page up/down |
 
 Touch outside the browser is best treated as coarse navigation; normal i3 use is
 keyboard-first.
+
+`Mod+f` uses i3's tabbed layout as a bar-visible desktop fullscreen. Press it
+again to return to split layout; use `Mod+h/l` to switch between the tabbed
+windows on the same workspace.
 
 ## Controls
 

@@ -380,7 +380,8 @@ Mod+h/j/k/l      focus left/down/up/right
 Mod+Shift+h/j/k/l move window left/down/up/right
 Mod+1..4         switch workspace
 Mod+Shift+1..4   move window to workspace
-Mod+f            fullscreen; sends browser F11 when browser is focused
+Mod+f            desktop fullscreen: tabbed layout with i3 bar visible
+Mod+Shift+Esc    force exit app/i3 fullscreen
 Mod+Shift+Space  floating toggle
 Mod+n            Wi-Fi TUI
 Mod+b            Bluetooth TUI
@@ -390,9 +391,14 @@ Mod+Left/Right   browser back/forward, workspace prev/next outside browser
 Mod+Up/Down      browser page up/down
 Mod+u            browser URL bar, including from browser fullscreen
 Mod+r            browser reload
-Mod+Shift+f      browser fullscreen alias
+Mod+Shift+f      browser F11 fullscreen
 Mod+Shift+slash  on-device cheat sheet
 ```
+
+`Mod+f` uses i3's tabbed layout as a bar-visible desktop fullscreen. Press it
+again to return to split layout; use `Mod+h/l` to switch between the tabbed
+windows on the same workspace. `Mod+Shift+f` remains the browser F11 fullscreen
+path.
 
 X idle locking is enabled by `xss-lock` from `.xinitrc`. The default X
 screensaver and DPMS timeouts are 600 seconds. The kernel exposes `s2idle`, but
