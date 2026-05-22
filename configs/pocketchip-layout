@@ -16,6 +16,7 @@ fi
 usage() {
   cat <<'EOF'
 Usage: pocketchip-layout focus-workspace
+       pocketchip-layout focus-direction left|right|up|down
        pocketchip-layout restore
 EOF
 }
@@ -23,6 +24,52 @@ EOF
 i3_cmd() {
   command -v i3-msg >/dev/null 2>&1 || exit 0
   i3-msg "$@" >/dev/null 2>&1 || true
+}
+
+i3_workspace() {
+  [ -n "${1:-}" ] || return 0
+  i3_cmd "workspace --no-auto-back-and-forth \"$1\""
+}
+
+mark_exists() {
+  [ -n "${1:-}" ] || return 1
+  tree_json="$(i3-msg -t get_tree 2>/dev/null)" || return 2
+  [ -n "$tree_json" ] || return 2
+  printf '%s\n' "$tree_json" | MARK_NAME="$1" python3 -c '
+import json
+import os
+import sys
+
+mark = os.environ.get("MARK_NAME")
+try:
+    tree = json.load(sys.stdin)
+except Exception:
+    sys.exit(2)
+
+def walk(node):
+    if mark in node.get("marks", []):
+        return True
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        if walk(child):
+            return True
+    return False
+
+sys.exit(0 if walk(tree) else 1)
+'
+}
+
+cleanup_marks() {
+  real_mark="${1:-}"
+  slot_mark="${2:-}"
+
+  if [ -n "$slot_mark" ]; then
+    i3_cmd "[con_mark=\"$slot_mark\"] kill"
+    i3_cmd "unmark $slot_mark"
+  fi
+
+  if [ -n "$real_mark" ]; then
+    i3_cmd "unmark $real_mark"
+  fi
 }
 
 release_modifiers() {
@@ -75,7 +122,9 @@ refocus_window() {
 
 window_exists() {
   [ -n "${1:-}" ] || return 1
-  WINDOW_ID="$1" i3-msg -t get_tree | python3 -c '
+  tree_json="$(i3-msg -t get_tree 2>/dev/null)" || return 2
+  [ -n "$tree_json" ] || return 2
+  printf '%s\n' "$tree_json" | WINDOW_ID="$1" python3 -c '
 import json
 import os
 import sys
@@ -86,7 +135,10 @@ try:
 except (TypeError, ValueError):
     sys.exit(1)
 
-tree = json.load(sys.stdin)
+try:
+    tree = json.load(sys.stdin)
+except Exception:
+    sys.exit(2)
 
 def walk(node):
     if node.get("window") == target_int:
@@ -100,11 +152,47 @@ sys.exit(0 if walk(tree) else 1)
 '
 }
 
+workspace_has_windows() {
+  [ -n "${1:-}" ] || return 1
+  tree_json="$(i3-msg -t get_tree 2>/dev/null)" || return 2
+  [ -n "$tree_json" ] || return 2
+  printf '%s\n' "$tree_json" | WORKSPACE_NAME="$1" python3 -c '
+import json
+import os
+import sys
+
+workspace_name = os.environ.get("WORKSPACE_NAME")
+try:
+    tree = json.load(sys.stdin)
+except Exception:
+    sys.exit(2)
+
+def count_windows(node):
+    total = 1 if node.get("window") else 0
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        total += count_windows(child)
+    return total
+
+def walk(node):
+    if node.get("type") == "workspace" and node.get("name") == workspace_name:
+        return count_windows(node)
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        found = walk(child)
+        if found is not None:
+            return found
+    return None
+
+sys.exit(0 if (walk(tree) or 0) > 0 else 1)
+'
+}
+
 write_state() {
   mkdir -p "$state_dir"
   {
     printf '%s\n' "$1"
     printf '%s\n' "$2"
+    printf '%s\n' "${3:-}"
+    printf '%s\n' "${4:-}"
   } > "$state_file"
 }
 
@@ -116,19 +204,40 @@ state_workspace() {
   sed -n '2p' "$state_file" 2>/dev/null || true
 }
 
+state_real_mark() {
+  sed -n '3p' "$state_file" 2>/dev/null || true
+}
+
+state_slot_mark() {
+  sed -n '4p' "$state_file" 2>/dev/null || true
+}
+
 watch_focus_window() {
   watched_window="$1"
   original_workspace="$2"
+  missed=0
 
   while :; do
     [ "$(state_window_id)" = "$watched_window" ] || exit 0
     [ "$(state_workspace)" = "$original_workspace" ] || exit 0
 
-    if ! window_exists "$watched_window"; then
+    if window_exists "$watched_window"; then
+      missed=0
+    else
+      rc=$?
+      if [ "$rc" -eq 2 ]; then
+        sleep 0.5
+        continue
+      fi
+      missed=$((missed + 1))
+    fi
+
+    if [ "$missed" -ge 3 ]; then
       if [ "$(focused_workspace_name || true)" = "$focus_workspace" ] &&
          [ -n "$original_workspace" ]; then
-        i3_cmd "workspace \"$original_workspace\""
+        i3_workspace "$original_workspace"
       fi
+      cleanup_marks "$(state_real_mark)" "$(state_slot_mark)"
       rm -f "$state_file"
       release_modifiers
       exit 0
@@ -148,38 +257,53 @@ start_focus_watch() {
 restore_normal() {
   window_id="$(state_window_id)"
   original_workspace="$(state_workspace)"
+  real_mark="$(state_real_mark)"
+  slot_mark="$(state_slot_mark)"
 
   i3_cmd fullscreen disable
   i3_cmd bar mode dock
   i3_cmd layout splith
 
   if [ -n "$window_id" ] && [ -n "$original_workspace" ]; then
-    i3_cmd "[id=\"$window_id\"] move container to workspace \"$original_workspace\"; workspace \"$original_workspace\""
-    i3_cmd "[id=\"$window_id\"] focus"
+    if [ -n "$real_mark" ] && mark_exists "$real_mark"; then
+      i3_cmd "[con_mark=\"$real_mark\"] move container to workspace \"$original_workspace\"; workspace --no-auto-back-and-forth \"$original_workspace\"; [con_mark=\"$real_mark\"] focus"
+    else
+      i3_cmd "[id=\"$window_id\"] move container to workspace \"$original_workspace\"; workspace --no-auto-back-and-forth \"$original_workspace\""
+      i3_cmd "[id=\"$window_id\"] focus"
+    fi
+
+    if [ -n "$slot_mark" ] && mark_exists "$slot_mark"; then
+      i3_cmd "swap container with mark $slot_mark"
+      i3_cmd "[con_mark=\"$slot_mark\"] kill"
+    fi
+
+    if [ -n "$real_mark" ]; then
+      i3_cmd "[con_mark=\"$real_mark\"] focus"
+      i3_cmd "unmark $real_mark"
+    else
+      i3_cmd "[id=\"$window_id\"] focus"
+    fi
     refocus_window "$window_id"
   else
     current_workspace="$(focused_workspace_name || true)"
     if [ "$current_workspace" = "$focus_workspace" ]; then
       stranded_window="$(focused_window_id || true)"
-      i3_cmd workspace back_and_forth
-      target_workspace="$(focused_workspace_name || true)"
-      if [ "$target_workspace" = "$focus_workspace" ]; then
-        target_workspace=1
-      fi
+      target_workspace="${POCKETCHIP_FOCUS_FALLBACK_WORKSPACE:-1}"
       if [ -n "$stranded_window" ] &&
          [ -n "$target_workspace" ] &&
          [ "$target_workspace" != "$focus_workspace" ]; then
-        i3_cmd "move container to workspace \"$target_workspace\"; workspace \"$target_workspace\""
+        i3_cmd "[id=\"$stranded_window\"] move container to workspace \"$target_workspace\"; workspace --no-auto-back-and-forth \"$target_workspace\""
         i3_cmd "[id=\"$stranded_window\"] focus"
         refocus_window "$stranded_window"
       elif [ -n "$target_workspace" ] &&
            [ "$target_workspace" != "$focus_workspace" ]; then
-        i3_cmd "workspace \"$target_workspace\""
+        i3_workspace "$target_workspace"
       fi
     fi
     refocus_window
   fi
 
+  cleanup_marks "$(state_real_mark)" "$(state_slot_mark)"
   rm -f "$state_file"
   release_modifiers
 }
@@ -192,29 +316,72 @@ focus_workspace_toggle() {
     return 0
   fi
 
-  [ -n "$(focused_window_id || true)" ] || {
+  state_id="$(state_window_id)"
+  if [ -n "$state_id" ]; then
+    if window_exists "$state_id"; then
+      i3_workspace "$focus_workspace"
+      release_modifiers
+      return 0
+    fi
+    cleanup_marks "$(state_real_mark)" "$(state_slot_mark)"
+    rm -f "$state_file"
+  fi
+
+  if workspace_has_windows "$focus_workspace"; then
+    i3_workspace "$focus_workspace"
     release_modifiers
     return 0
-  }
+  fi
 
-  i3_cmd fullscreen disable
-  i3_cmd bar mode dock
-  i3_cmd "move container to workspace \"$focus_workspace\"; workspace \"$focus_workspace\""
   window_id="$(focused_window_id || true)"
   [ -n "$window_id" ] || {
     release_modifiers
     return 0
   }
-  write_state "$window_id" "$current_workspace"
+
+  uid="$(id -u 2>/dev/null || printf 0)"
+  real_mark="__pchip_focus_real_${uid}_${window_id}_$$"
+  slot_mark="__pchip_focus_slot_${uid}_${window_id}_$$"
+
+  i3_cmd fullscreen disable
+  i3_cmd bar mode dock
+  i3_cmd "unmark $real_mark; unmark $slot_mark"
+  i3_cmd "mark --add $real_mark; open; mark --add $slot_mark; swap container with mark $real_mark; [con_mark=\"$real_mark\"] move container to workspace \"$focus_workspace\"; workspace --no-auto-back-and-forth \"$focus_workspace\"; [con_mark=\"$real_mark\"] focus"
+  if ! window_exists "$window_id"; then
+    cleanup_marks "$real_mark" "$slot_mark"
+    release_modifiers
+    return 0
+  fi
+  write_state "$window_id" "$current_workspace" "$real_mark" "$slot_mark"
   release_modifiers
   refocus_window "$window_id"
   start_focus_watch "$window_id" "$current_workspace"
+}
+
+focus_direction() {
+  direction="${1:-}"
+  case "$direction" in
+    left|right|up|down) ;;
+    *) usage; exit 2 ;;
+  esac
+
+  if [ "$(focused_workspace_name || true)" = "$focus_workspace" ]; then
+    restore_normal
+    sleep 0.05
+  fi
+
+  i3_cmd "focus $direction"
+  release_modifiers
 }
 
 cmd="${1:-help}"
 case "$cmd" in
   focus-workspace|desktop-fullscreen)
     focus_workspace_toggle
+    ;;
+  focus-direction)
+    shift
+    focus_direction "${1:-}"
     ;;
   restore)
     restore_normal

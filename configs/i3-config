@@ -11,9 +11,11 @@ hide_edge_borders smart
 title_align center
 
 set $term pocketchip-terminal
+set $shift_chord shift-chord
 
 bindsym $mod+Return exec --no-startup-id $term
 bindsym $mod+d exec --no-startup-id pocketchip-menu
+bindsym $mod+z exec --no-startup-id pocketchip-i3-chord "$shift_chord" 4
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exit
@@ -48,10 +50,10 @@ bindsym $mod+v exec --no-startup-id $term -geometry 74x18 -e pocketchip-control 
 bindsym $mod+Shift+v exec --no-startup-id $term -geometry 74x14 -e pocketchip-control brightness
 bindsym $mod+Shift+t exec --no-startup-id $term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu
 
-bindsym $mod+h focus left
+bindsym $mod+h exec --no-startup-id pocketchip-layout focus-direction left
 bindsym $mod+j focus down
 bindsym $mod+k focus up
-bindsym $mod+l focus right
+bindsym $mod+l exec --no-startup-id pocketchip-layout focus-direction right
 
 bindsym $mod+Shift+h move left
 bindsym $mod+Shift+j move down
@@ -66,10 +68,12 @@ bindsym $mod+1 workspace number 1
 bindsym $mod+2 workspace number 2
 bindsym $mod+3 workspace number 3
 bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
 bindsym $mod+Shift+1 move container to workspace number 1
 bindsym $mod+Shift+2 move container to workspace number 2
 bindsym $mod+Shift+3 move container to workspace number 3
 bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
 
 bindsym XF86MonBrightnessUp exec --no-startup-id pocketchip-control brightness-up
 bindsym XF86MonBrightnessDown exec --no-startup-id pocketchip-control brightness-down
@@ -81,6 +85,61 @@ bindsym $mod+minus exec --no-startup-id pocketchip-control brightness-down
 bindsym $mod+period exec --no-startup-id pocketchip-control volume-up
 bindsym $mod+comma exec --no-startup-id pocketchip-control volume-down
 bindsym $mod+slash exec --no-startup-id pocketchip-control volume-mute
+
+mode "$shift_chord" {
+    bindsym q kill, mode "default"
+    bindsym Shift+q kill, mode "default"
+    bindsym r restart, mode "default"
+    bindsym Shift+r restart, mode "default"
+    bindsym e exit, mode "default"
+    bindsym Shift+e exit, mode "default"
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+    bindsym slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md', mode "default"
+    bindsym Shift+slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md', mode "default"
+    bindsym equal exec --no-startup-id xdotool key --clearmodifiers ctrl+plus, mode "default"
+    bindsym Shift+equal exec --no-startup-id xdotool key --clearmodifiers ctrl+plus, mode "default"
+    bindsym minus exec --no-startup-id xdotool key --clearmodifiers ctrl+minus, mode "default"
+    bindsym Shift+minus exec --no-startup-id xdotool key --clearmodifiers ctrl+minus, mode "default"
+    bindsym BackSpace kill, mode "default"
+    bindsym Shift+BackSpace kill, mode "default"
+    bindsym w exec --no-startup-id pocketchip-browser light, mode "default"
+    bindsym Shift+w exec --no-startup-id pocketchip-browser light, mode "default"
+    bindsym f exec --no-startup-id pocketchip-browser-action fullscreen, mode "default"
+    bindsym Shift+f exec --no-startup-id pocketchip-browser-action fullscreen, mode "default"
+    bindsym x exec --no-startup-id pocketchip-power low-lock, mode "default"
+    bindsym Shift+x exec --no-startup-id pocketchip-power low-lock, mode "default"
+    bindsym c exec --no-startup-id pocketchip-power caffeine, mode "default"
+    bindsym Shift+c exec --no-startup-id pocketchip-power caffeine, mode "default"
+    bindsym p exec --no-startup-id pocketchip-power performance, mode "default"
+    bindsym Shift+p exec --no-startup-id pocketchip-power performance, mode "default"
+    bindsym n exec --no-startup-id $term -e pocketchip-connect menu, mode "default"
+    bindsym Shift+n exec --no-startup-id $term -e pocketchip-connect menu, mode "default"
+    bindsym v exec --no-startup-id $term -geometry 74x14 -e pocketchip-control brightness, mode "default"
+    bindsym Shift+v exec --no-startup-id $term -geometry 74x14 -e pocketchip-control brightness, mode "default"
+    bindsym t exec --no-startup-id $term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu, mode "default"
+    bindsym Shift+t exec --no-startup-id $term -hold -geometry 74x14 -e pocketchip-touch-calibrate menu, mode "default"
+    bindsym h move left, mode "default"
+    bindsym Shift+h move left, mode "default"
+    bindsym j move down, mode "default"
+    bindsym Shift+j move down, mode "default"
+    bindsym k move up, mode "default"
+    bindsym Shift+k move up, mode "default"
+    bindsym l move right, mode "default"
+    bindsym Shift+l move right, mode "default"
+    bindsym space floating toggle, mode "default"
+    bindsym Shift+space floating toggle, mode "default"
+    bindsym 1 move container to workspace number 1, mode "default"
+    bindsym Shift+1 move container to workspace number 1, mode "default"
+    bindsym 2 move container to workspace number 2, mode "default"
+    bindsym Shift+2 move container to workspace number 2, mode "default"
+    bindsym 3 move container to workspace number 3, mode "default"
+    bindsym Shift+3 move container to workspace number 3, mode "default"
+    bindsym 4 move container to workspace number 4, mode "default"
+    bindsym Shift+4 move container to workspace number 4, mode "default"
+    bindsym 5 move container to workspace number 5, mode "default"
+    bindsym Shift+5 move container to workspace number 5, mode "default"
+}
 
 exec --no-startup-id pocketchip-touch-calibrate apply
 exec --no-startup-id pocketchip-splash desktop

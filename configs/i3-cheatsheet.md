@@ -9,6 +9,7 @@ Mod is Alt on the PocketCHIP keyboard.
 | Mod+Enter | terminal |
 | Mod+m or Mod+d | PocketCHIP app menu |
 | Mod+Shift+/ | this cheat sheet |
+| Mod+z then key | easier Mod+Shift-style chord |
 | Mod+i | system about/support card |
 | Mod+w | Firefox ESR |
 | Mod+n / Mod+b | Wi-Fi / Bluetooth TUI |
@@ -26,16 +27,26 @@ and `power:`.
 | --- | --- |
 | Mod+h/j/k/l | focus left/down/up/right |
 | Mod+Shift+h/j/k/l | move window left/down/up/right |
-| Mod+1..4 | switch workspace |
-| Mod+Shift+1..4 | move window to workspace |
+| Mod+z then h/j/k/l | move window left/down/up/right |
+| Mod+1..5 | switch workspace |
+| Mod+Shift+1..5 | move window to workspace |
+| Mod+z then 1..5 | move window to workspace |
 | Mod+f | move focused window to/from 5:focus workspace |
 | Mod+Shift+f | browser F11 fullscreen |
+| Mod+z then f | browser F11 fullscreen |
 | Mod+Space | switch tiling/floating focus |
 | Mod+Shift+Space | toggle floating |
+| Mod+z then Space | toggle floating |
 | Mod+Shift+q | close window |
+| Mod+z then q | close window |
 | Mod+Shift+r | reload i3 config |
 | Mod+Shift+e | exit i3 |
 | Mod+Shift+Esc | force exit app/i3 fullscreen |
+
+`Mod+z` opens a short sticky shifted-command mode for the small keyboard.
+Press and release `Mod+z`, then press the action key within about 4 seconds.
+Use `Esc` or `Enter` to cancel. If you still catch Shift on the second key,
+the chord mode accepts that too.
 
 ## Terminal And SSH
 
@@ -45,6 +56,7 @@ and `power:`.
 | Ctrl+- | Sakura terminal zoom out |
 | Mod+Shift+= | send terminal zoom in to focused app |
 | Mod+Shift+- | send terminal zoom out to focused app |
+| Mod+z then = / - | send terminal zoom in/out to focused app |
 | Ctrl+Shift+c / Ctrl+Shift+v | copy / paste in Sakura |
 | Enter then `~.` | OpenSSH escape to disconnect a stuck SSH session |
 | Mod+Backspace | send OpenSSH disconnect escape to focused terminal |
@@ -61,6 +73,7 @@ the start of a line. If the terminal itself is wedged, use
 | --- | --- |
 | Mod+w | Firefox ESR |
 | Mod+Shift+w | lightweight browser if installed |
+| Mod+z then w | lightweight browser if installed |
 | Mod+Left / Mod+Right | browser back/forward, otherwise workspace prev/next |
 | Mod+Up / Mod+Down | browser page up/down |
 | Mod+u | focus browser URL bar, including from browser fullscreen |
@@ -75,9 +88,13 @@ keyboard-first.
 
 `Mod+f` moves the focused window to a dedicated `5:focus` workspace and follows
 it. Press `Mod+f` again from `5:focus` to send it back to its original
-workspace. If the focused app exits while on `5:focus`, i3 returns to the
-original workspace. This avoids true fullscreen and tabbed-layout input edge
-cases.
+workspace and original tile slot. If `5:focus` is already active in the
+background, `Mod+f` returns to it instead of moving a second window there.
+`Mod+5` is the manual escape hatch for reaching that workspace directly. From
+`5:focus`, `Mod+h` and `Mod+l` restore the focused window first, then continue
+focus left or right on the normal workspace. If the focused app exits while on
+`5:focus`, i3 removes the saved tile slot and returns to the original workspace.
+This avoids true fullscreen and tabbed-layout input edge cases.
 
 ## Controls
 
@@ -86,10 +103,12 @@ cases.
 | Mod+c | controls menu |
 | Mod+v | ALSA volume mixer |
 | Mod+Shift+v | brightness TUI |
+| Mod+z then v | brightness TUI |
 | Mod+- / Mod+= | brightness down/up |
 | Mod+, / Mod+. | volume down/up |
 | Mod+/ | toggle audio output |
 | Mod+Shift+t | touchscreen calibration presets |
+| Mod+z then t | touchscreen calibration presets |
 
 Brightness and volume hotkeys show a short `br ...` or `vol ...` alert in the
 i3 bar.

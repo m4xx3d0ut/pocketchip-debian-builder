@@ -111,10 +111,28 @@ Ctrl++                  Sakura terminal zoom in
 Ctrl+-                  Sakura terminal zoom out
 Mod+Shift+=             send terminal zoom in to focused app
 Mod+Shift+-             send terminal zoom out to focused app
+Mod+z then = or -       easier sticky chord for the same zoom actions
 Enter then ~.           OpenSSH local escape to disconnect a stuck SSH session
 Mod+Backspace           send the OpenSSH disconnect escape to focused terminal
 Mod+Shift+Backspace     hard close focused window
 ```
+
+For small-keyboard usability, `Mod+z` opens a short sticky shifted-command mode
+in i3. Press and release `Mod+z`, then press the normal action key within about
+4 seconds. This mirrors the common `Mod+Shift+...` actions without requiring a
+three-key chord: `q` closes, `h/j/k/l` moves windows, `1..4` moves windows to a
+workspace, `c` toggles caffeine, `/` opens the cheat sheet, and `Esc` or
+`Enter` cancels the mode. The chord mode also accepts shifted second keys, so
+an accidental `Shift+c` after `Mod+z` still toggles caffeine.
+
+`Mod+f` uses workspace `5:focus` as the large-view workspace for the current
+window. `Mod+5` is intentionally bound as a manual escape hatch so a stranded
+focus workspace can always be reached, and `Mod+Shift+5` can move a window there
+directly. From `5:focus`, `Mod+h` and `Mod+l` first restore the focus window,
+then continue the normal left/right focus action on the original workspace.
+Focus mode leaves an invisible marked i3 slot in the original tree and swaps the
+window back into that slot on restore, so the original tiling position is
+preserved instead of appending the window at the end of the workspace.
 
 ## Image Personalization
 

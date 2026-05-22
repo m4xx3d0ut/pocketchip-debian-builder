@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+mode="${1:-shift-chord}"
+timeout="${2:-4}"
+
+case "$timeout" in
+  ''|*[!0-9]*) timeout=4 ;;
+esac
+
+command -v i3-msg >/dev/null 2>&1 || exit 0
+
+i3-msg mode "$mode" >/dev/null 2>&1 || exit 0
+(
+  sleep "$timeout"
+  i3-msg mode default >/dev/null 2>&1 || true
+) &
