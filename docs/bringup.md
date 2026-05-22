@@ -104,6 +104,18 @@ installed.
 available. The shipped `.Xresources` file only applies to that optional fallback
 path.
 
+Useful terminal/session keys:
+
+```text
+Ctrl++                  Sakura terminal zoom in
+Ctrl+-                  Sakura terminal zoom out
+Mod+Shift+=             send terminal zoom in to focused app
+Mod+Shift+-             send terminal zoom out to focused app
+Enter then ~.           OpenSSH local escape to disconnect a stuck SSH session
+Mod+Backspace           send the OpenSSH disconnect escape to focused terminal
+Mod+Shift+Backspace     hard close focused window
+```
+
 ## Image Personalization
 
 The rootfs and U-Boot build scripts read `configs/local.env` when it exists.

@@ -20,6 +20,10 @@ bindsym $mod+Shift+e exit
 
 bindsym $mod+Shift+slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
 bindsym $mod+i exec --no-startup-id $term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
+bindsym $mod+Shift+equal exec --no-startup-id xdotool key --clearmodifiers ctrl+plus
+bindsym $mod+Shift+minus exec --no-startup-id xdotool key --clearmodifiers ctrl+minus
+bindsym $mod+BackSpace exec --no-startup-id sh -lc 'xdotool key --clearmodifiers Return; xdotool type --clearmodifiers "~."'
+bindsym $mod+Shift+BackSpace kill
 bindsym $mod+w exec --no-startup-id pocketchip-browser
 bindsym $mod+Shift+w exec --no-startup-id pocketchip-browser light
 bindsym $mod+Left exec --no-startup-id pocketchip-browser-action back

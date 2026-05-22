@@ -36,6 +36,24 @@ and `power:`.
 | Mod+Shift+r | reload i3 config |
 | Mod+Shift+e | exit i3 |
 
+## Terminal And SSH
+
+| Key | Action |
+| --- | --- |
+| Ctrl++ | Sakura terminal zoom in |
+| Ctrl+- | Sakura terminal zoom out |
+| Mod+Shift+= | send terminal zoom in to focused app |
+| Mod+Shift+- | send terminal zoom out to focused app |
+| Ctrl+Shift+c / Ctrl+Shift+v | copy / paste in Sakura |
+| Enter then `~.` | OpenSSH escape to disconnect a stuck SSH session |
+| Mod+Backspace | send OpenSSH disconnect escape to focused terminal |
+| Mod+Shift+Backspace | hard close focused window |
+
+Use `Mod+Backspace` only with a terminal/SSH session focused. It sends
+`Enter` followed by `~.`, which OpenSSH treats as a local disconnect escape at
+the start of a line. If the terminal itself is wedged, use
+`Mod+Shift+Backspace`.
+
 ## Browser And Gestures
 
 | Key or Gesture | Action |
