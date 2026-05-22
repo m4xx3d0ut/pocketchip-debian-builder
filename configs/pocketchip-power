@@ -6,7 +6,7 @@ lock_dir=/tmp/pocketchip-power-lock
 caffeine_state="/tmp/pocketchip-caffeine-$(id -u 2>/dev/null || printf 0)"
 
 term() {
-  exec xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 "$@"
+  exec pocketchip-terminal "$@"
 }
 
 usage() {

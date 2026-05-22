@@ -4,6 +4,9 @@ XTerm*cursorColor: green
 XTerm*pointerColor: green
 XTerm*pointerColorBackground: black
 XTerm*faceName: DejaVu Sans Mono
+XTerm*faceNameDoublesize: Unifont
+XTerm*utf8: 1
+XTerm*wideChars: true
 XTerm*faceSize: 7
 XTerm*termName: xterm-256color
 XTerm*scrollBar: false

@@ -1,0 +1,92 @@
+#!/bin/sh
+set -eu
+
+font="${POCKETCHIP_TERMINAL_FONT:-DejaVu Sans Mono 7}"
+cols=''
+rows=''
+hold=0
+
+parse_geometry() {
+  geom="${1%%[+-]*}"
+  case "$geom" in
+    *x*)
+      c="${geom%x*}"
+      r="${geom#*x}"
+      case "$c:$r" in
+        *[!0-9:]*|:|*:|'') return 0 ;;
+        *) cols="$c"; rows="$r" ;;
+      esac
+      ;;
+  esac
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -geometry|--geometry)
+      [ "$#" -gt 1 ] || break
+      parse_geometry "$2"
+      shift 2
+      ;;
+    -hold|--hold)
+      hold=1
+      shift
+      ;;
+    -e|--execute|--xterm-execute)
+      shift
+      break
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$hold" = 1 ] && [ "$#" -gt 0 ]; then
+  set -- sh -c '"$@"; rc=$?; printf "\n[exit %s] press Enter to close " "$rc"; read _; exit "$rc"' pocketchip-terminal "$@"
+fi
+
+if command -v sakura >/dev/null 2>&1; then
+  conf="${XDG_CONFIG_HOME:-$HOME/.config}/sakura/sakura.conf"
+  if [ -n "$cols" ] && [ -n "$rows" ]; then
+    if [ "$#" -gt 0 ]; then
+      exec sakura --config-file "$conf" -f "$font" -c "$cols" -r "$rows" -e "$@"
+    fi
+    exec sakura --config-file "$conf" -f "$font" -c "$cols" -r "$rows"
+  fi
+  if [ "$#" -gt 0 ]; then
+    exec sakura --config-file "$conf" -f "$font" -e "$@"
+  fi
+  exec sakura --config-file "$conf" -f "$font"
+fi
+
+xtfont="${POCKETCHIP_XTERM_FONT:-DejaVu Sans Mono}"
+widefont="${POCKETCHIP_XTERM_WIDE_FONT:-Unifont}"
+geometry_arg=''
+[ -n "$cols" ] && [ -n "$rows" ] && geometry_arg="${cols}x${rows}"
+
+if ! command -v xterm >/dev/null 2>&1; then
+  printf '%s\n' 'pocketchip-terminal: neither sakura nor xterm is installed' >&2
+  exit 127
+fi
+
+if [ "$#" -gt 0 ]; then
+  if [ "$hold" = 1 ]; then
+    if [ -n "$geometry_arg" ]; then
+      exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7 -hold -geometry "$geometry_arg" -e "$@"
+    fi
+    exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7 -hold -e "$@"
+  fi
+  if [ -n "$geometry_arg" ]; then
+    exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7 -geometry "$geometry_arg" -e "$@"
+  fi
+  exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7 -e "$@"
+fi
+
+if [ -n "$geometry_arg" ]; then
+  exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7 -geometry "$geometry_arg"
+fi
+exec xterm -bg black -fg green -cr green -fa "$xtfont" -fd "$widefont" -u8 -fs 7

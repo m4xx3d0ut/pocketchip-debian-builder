@@ -85,6 +85,24 @@ Expected first-pass outcomes:
 - Backlight brightness can be adjusted through sysfs.
 - Wi-Fi enumerates; firmware may still need iteration.
 - `zsh`, `tmux`, `nvim`, and `startx` all run.
+- `pocketchip-terminal` starts Sakura/VTE when available and falls back to
+  xterm for recovery when xterm is manually installed.
+- Terminal prompt/status glyphs render through the packaged Powerline, Font
+  Awesome, and Unifont coverage.
+
+## Terminal Stack
+
+The default image uses Sakura/VTE through the `pocketchip-terminal` wrapper.
+This gives better UTF-8, Nerd Font-adjacent prompt glyph, remote tmux, and TUI
+behavior than xterm on the small PocketCHIP LCD. The wrapper accepts the subset
+of xterm-style arguments used by the image, including `-geometry`, `-hold`, and
+`-e`, so i3 bindings and helper menus do not need to know which terminal is
+installed.
+
+`xterm` is not installed by default. If it is manually installed later,
+`pocketchip-terminal` can still use it as a recovery fallback when Sakura is not
+available. The shipped `.Xresources` file only applies to that optional fallback
+path.
 
 ## Image Personalization
 

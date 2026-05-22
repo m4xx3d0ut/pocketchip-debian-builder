@@ -127,7 +127,12 @@ make publish-check
   `pocketroot`; patched legacy CHIP U-Boot for the experimental NAND/SLC rescue
   installer path.
 - UI: Xorg plus `i3`
-- Userland: `zsh`, Oh My Zsh, `tmux`, `neovim`, and basic CLI/admin tools
+- Terminal: Sakura/VTE by default through `pocketchip-terminal`, with optional
+  xterm fallback when xterm is manually installed. `xterm` is intentionally not
+  part of the default image because Sakura gives better Unicode/TUI behavior on
+  the PocketCHIP display.
+- Userland: `zsh`, Oh My Zsh, `tmux`, `neovim`, Powerline/Font Awesome/Unifont
+  terminal glyph coverage, and basic CLI/admin tools
 - Network: NetworkManager, OpenSSH server/client, autossh, mosh, bluez, and
   RTL8723BS Wi-Fi/Bluetooth firmware support. The PocketCHIP Wi-Fi module is
   2.4 GHz only. Bluetooth HCI exposure and validation are documented in

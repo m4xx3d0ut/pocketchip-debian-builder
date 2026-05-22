@@ -553,6 +553,8 @@ install -m 0644 "$repo_root/configs/xinitrc" "$user_home/.xinitrc"
 install -m 0644 "$repo_root/configs/tmux.conf" "$user_home/.tmux.conf"
 install -m 0644 "$repo_root/configs/Xresources" "$user_home/.Xresources"
 install -m 0644 "$repo_root/configs/pocketchip.Xmodmap" "$user_home/.Xmodmap"
+install -d -m 0755 "$user_home/.config/sakura"
+install -m 0644 "$repo_root/configs/sakura.conf" "$user_home/.config/sakura/sakura.conf"
 install -d -m 0755 "$user_home/.config/i3"
 install -m 0644 "$repo_root/configs/i3-config" "$user_home/.config/i3/config"
 install -d -m 0755 "$user_home/.config/nvim"
@@ -631,6 +633,7 @@ toolbarbutton,
 EOF
 
 install -d -m 0755 "$rootfs/usr/local/bin"
+install -m 0755 "$repo_root/configs/pocketchip-terminal" "$rootfs/usr/local/bin/pocketchip-terminal"
 install -m 0755 "$repo_root/configs/pocketchip-startx" "$rootfs/usr/local/bin/pocketchip-startx"
 install -m 0755 "$repo_root/configs/pocketchip-status" "$rootfs/usr/local/bin/pocketchip-status"
 install -m 0755 "$repo_root/configs/pocketchip-touch-calibrate" "$rootfs/usr/local/bin/pocketchip-touch-calibrate"
@@ -775,6 +778,10 @@ install -d -m 0755 "$rootfs/etc/ssh/sshd_config.d"
 cat > "$rootfs/etc/ssh/sshd_config.d/50-pocketchip-root.conf" <<'EOF'
 PermitRootLogin no
 EOF
+
+install -d -m 0755 "$rootfs/etc/fonts/conf.d"
+install -m 0644 "$repo_root/configs/fontconfig-pocketchip-terminal.conf" \
+  "$rootfs/etc/fonts/conf.d/60-pocketchip-terminal.conf"
 
 install -d -m 0755 "$rootfs/etc/polkit-1/rules.d"
 install -m 0644 "$repo_root/configs/polkit-pocketchip-radios.rules" "$rootfs/etc/polkit-1/rules.d/50-pocketchip-radios.rules"

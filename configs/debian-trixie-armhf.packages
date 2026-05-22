@@ -86,11 +86,15 @@ dmenu
 feh
 firefox-esr
 fonts-dejavu-core
+fonts-font-awesome
+fonts-powerline
+fonts-unifont
 i3lock
 i3-wm
 i3status
 lisgd
 libinput-tools
+sakura
 upower
 x11-xserver-utils
 xinit
@@ -98,4 +102,3 @@ xinput
 xss-lock
 xserver-xorg-core
 xserver-xorg-input-libinput
-xterm

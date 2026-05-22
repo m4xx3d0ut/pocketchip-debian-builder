@@ -10,7 +10,7 @@ default_floating_border pixel 1
 hide_edge_borders smart
 title_align center
 
-set $term xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7
+set $term pocketchip-terminal
 
 bindsym $mod+Return exec --no-startup-id $term
 bindsym $mod+d exec --no-startup-id pocketchip-menu
@@ -80,7 +80,7 @@ bindsym $mod+slash exec --no-startup-id pocketchip-control volume-mute
 exec --no-startup-id pocketchip-touch-calibrate apply
 exec --no-startup-id pocketchip-splash desktop
 exec --no-startup-id pocketchip-gestures
-exec --no-startup-id sh -lc 'pocketchip-first-login-password --needed && xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7 -geometry 74x14 -e pocketchip-first-login-password || true'
+exec --no-startup-id sh -lc 'pocketchip-first-login-password --needed && pocketchip-terminal -geometry 74x14 -e pocketchip-first-login-password || true'
 exec --no-startup-id xsetroot -cursor_name crosshair
 
 bar {

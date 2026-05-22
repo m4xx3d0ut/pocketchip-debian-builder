@@ -54,7 +54,7 @@ case "$cmd" in
     fallback_i3 exec pocketchip-menu
     ;;
   terminal)
-    fallback_i3 exec xterm -bg black -fg green -cr green -fa "DejaVu Sans Mono" -fs 7
+    fallback_i3 exec pocketchip-terminal
     ;;
   *)
     cat <<'EOF'
