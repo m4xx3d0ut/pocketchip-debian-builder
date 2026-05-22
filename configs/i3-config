@@ -17,7 +17,7 @@ bindsym $mod+d exec --no-startup-id pocketchip-menu
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exit
-bindsym $mod+Shift+Escape exec --no-startup-id sh -lc 'i3-msg fullscreen disable >/dev/null 2>&1 || true; xdotool key --clearmodifiers F11 2>/dev/null || true; sleep 0.1; i3-msg fullscreen disable >/dev/null 2>&1 || true'
+bindsym $mod+Shift+Escape exec --no-startup-id sh -lc 'pocketchip-layout restore >/dev/null 2>&1 || true; xdotool key --clearmodifiers F11 2>/dev/null || true; sleep 0.1; pocketchip-layout restore >/dev/null 2>&1 || true'
 
 bindsym $mod+Shift+slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
 bindsym $mod+i exec --no-startup-id $term -geometry 74x18 -e sh -lc 'pocketchip-about | less'
@@ -58,7 +58,7 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-bindsym $mod+f exec --no-startup-id pocketchip-layout desktop-fullscreen
+bindsym $mod+f exec --no-startup-id pocketchip-layout focus-workspace
 bindsym $mod+space focus mode_toggle
 bindsym $mod+Shift+space floating toggle
 

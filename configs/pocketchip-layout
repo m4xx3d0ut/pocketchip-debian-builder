@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 set -eu
 
+focus_workspace="${POCKETCHIP_FOCUS_WORKSPACE:-5:focus}"
+state_dir="${XDG_RUNTIME_DIR:-/tmp}"
+state_file="$state_dir/pocketchip-layout-focus.${USER:-user}"
+
 if [ -z "${I3SOCK:-}" ]; then
   i3sock="$(find /tmp -maxdepth 3 -type s -path '/tmp/i3-*/*' -name 'ipc-socket.*' 2>/dev/null | head -n 1 || true)"
   if [ -n "$i3sock" ]; then
@@ -11,53 +15,209 @@ fi
 
 usage() {
   cat <<'EOF'
-Usage: pocketchip-layout desktop-fullscreen
+Usage: pocketchip-layout focus-workspace
+       pocketchip-layout restore
 EOF
 }
 
 i3_cmd() {
   command -v i3-msg >/dev/null 2>&1 || exit 0
-  i3-msg "$@" >/dev/null
+  i3-msg "$@" >/dev/null 2>&1 || true
 }
 
-focused_layout_path() {
+release_modifiers() {
+  command -v xdotool >/dev/null 2>&1 || return 0
+  xdotool keyup Alt_L Alt_R Control_L Control_R Shift_L Shift_R \
+    Super_L Super_R ISO_Level3_Shift ISO_Level5_Shift Mode_switch \
+    2>/dev/null || true
+}
+
+focused_window_id() {
   i3-msg -t get_tree | python3 -c '
 import json
 import sys
 
 tree = json.load(sys.stdin)
 
-def walk(node, path):
-    next_path = path + [node]
+def walk(node):
     if node.get("focused"):
-        return next_path
+        return node
     for child in node.get("nodes", []) + node.get("floating_nodes", []):
-        found = walk(child, next_path)
+        found = walk(child)
         if found:
             return found
     return None
 
-path = walk(tree, []) or []
-for node in path:
-    layout = node.get("layout")
-    if layout:
-        print(layout)
+node = walk(tree) or {}
+print(node.get("window") or "")
 '
 }
 
-desktop_fullscreen() {
-  layouts="$(focused_layout_path || true)"
-  if printf '%s\n' "$layouts" | grep -qx tabbed; then
-    i3_cmd layout splith
+focused_workspace_name() {
+  i3-msg -t get_workspaces | python3 -c '
+import json
+import sys
+
+for workspace in json.load(sys.stdin):
+    if workspace.get("focused"):
+        print(workspace.get("name", ""))
+        break
+'
+}
+
+refocus_window() {
+  command -v xdotool >/dev/null 2>&1 || return 0
+  window_id="${1:-$(focused_window_id || true)}"
+  [ -n "$window_id" ] || return 0
+  xdotool windowactivate --sync "$window_id" 2>/dev/null || true
+  xdotool windowfocus --sync "$window_id" 2>/dev/null || true
+}
+
+window_exists() {
+  [ -n "${1:-}" ] || return 1
+  WINDOW_ID="$1" i3-msg -t get_tree | python3 -c '
+import json
+import os
+import sys
+
+target = os.environ.get("WINDOW_ID")
+try:
+    target_int = int(target)
+except (TypeError, ValueError):
+    sys.exit(1)
+
+tree = json.load(sys.stdin)
+
+def walk(node):
+    if node.get("window") == target_int:
+        return True
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        if walk(child):
+            return True
+    return False
+
+sys.exit(0 if walk(tree) else 1)
+'
+}
+
+write_state() {
+  mkdir -p "$state_dir"
+  {
+    printf '%s\n' "$1"
+    printf '%s\n' "$2"
+  } > "$state_file"
+}
+
+state_window_id() {
+  sed -n '1p' "$state_file" 2>/dev/null || true
+}
+
+state_workspace() {
+  sed -n '2p' "$state_file" 2>/dev/null || true
+}
+
+watch_focus_window() {
+  watched_window="$1"
+  original_workspace="$2"
+
+  while :; do
+    [ "$(state_window_id)" = "$watched_window" ] || exit 0
+    [ "$(state_workspace)" = "$original_workspace" ] || exit 0
+
+    if ! window_exists "$watched_window"; then
+      if [ "$(focused_workspace_name || true)" = "$focus_workspace" ] &&
+         [ -n "$original_workspace" ]; then
+        i3_cmd "workspace \"$original_workspace\""
+      fi
+      rm -f "$state_file"
+      release_modifiers
+      exit 0
+    fi
+
+    sleep 0.5
+  done
+}
+
+start_focus_watch() {
+  (
+    trap '' HUP
+    watch_focus_window "$1" "$2"
+  ) >/dev/null 2>&1 &
+}
+
+restore_normal() {
+  window_id="$(state_window_id)"
+  original_workspace="$(state_workspace)"
+
+  i3_cmd fullscreen disable
+  i3_cmd bar mode dock
+  i3_cmd layout splith
+
+  if [ -n "$window_id" ] && [ -n "$original_workspace" ]; then
+    i3_cmd "[id=\"$window_id\"] move container to workspace \"$original_workspace\"; workspace \"$original_workspace\""
+    i3_cmd "[id=\"$window_id\"] focus"
+    refocus_window "$window_id"
   else
-    i3_cmd layout tabbed
+    current_workspace="$(focused_workspace_name || true)"
+    if [ "$current_workspace" = "$focus_workspace" ]; then
+      stranded_window="$(focused_window_id || true)"
+      i3_cmd workspace back_and_forth
+      target_workspace="$(focused_workspace_name || true)"
+      if [ "$target_workspace" = "$focus_workspace" ]; then
+        target_workspace=1
+      fi
+      if [ -n "$stranded_window" ] &&
+         [ -n "$target_workspace" ] &&
+         [ "$target_workspace" != "$focus_workspace" ]; then
+        i3_cmd "move container to workspace \"$target_workspace\"; workspace \"$target_workspace\""
+        i3_cmd "[id=\"$stranded_window\"] focus"
+        refocus_window "$stranded_window"
+      elif [ -n "$target_workspace" ] &&
+           [ "$target_workspace" != "$focus_workspace" ]; then
+        i3_cmd "workspace \"$target_workspace\""
+      fi
+    fi
+    refocus_window
   fi
+
+  rm -f "$state_file"
+  release_modifiers
+}
+
+focus_workspace_toggle() {
+  current_workspace="$(focused_workspace_name || true)"
+
+  if [ "$current_workspace" = "$focus_workspace" ]; then
+    restore_normal
+    return 0
+  fi
+
+  [ -n "$(focused_window_id || true)" ] || {
+    release_modifiers
+    return 0
+  }
+
+  i3_cmd fullscreen disable
+  i3_cmd bar mode dock
+  i3_cmd "move container to workspace \"$focus_workspace\"; workspace \"$focus_workspace\""
+  window_id="$(focused_window_id || true)"
+  [ -n "$window_id" ] || {
+    release_modifiers
+    return 0
+  }
+  write_state "$window_id" "$current_workspace"
+  release_modifiers
+  refocus_window "$window_id"
+  start_focus_watch "$window_id" "$current_workspace"
 }
 
 cmd="${1:-help}"
 case "$cmd" in
-  desktop-fullscreen)
-    desktop_fullscreen
+  focus-workspace|desktop-fullscreen)
+    focus_workspace_toggle
+    ;;
+  restore)
+    restore_normal
     ;;
   *)
     usage
