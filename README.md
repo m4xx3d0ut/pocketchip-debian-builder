@@ -2,6 +2,10 @@
 
 *(Unofficial a.k.a. ***"PocketTRIX"***)*
 
+<p align="center">
+  <img src="docs/assets/pockettrix-hero.gif" alt="PocketTRIX running Debian 13 Trixie on PocketCHIP" width="480">
+</p>
+
 PocketCHIP Trixie is an unofficial Debian 13/Trixie image and builder for
 PocketCHIP. It provides a reproducible Debian rootfs build, mainline U-Boot/FEL
 bring-up tools, PocketCHIP hardware defaults, an i3 handheld environment, and an
