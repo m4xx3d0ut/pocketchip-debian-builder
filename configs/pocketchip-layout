@@ -18,6 +18,7 @@ usage() {
 Usage: pocketchip-layout focus-workspace
        pocketchip-layout focus-direction left|right|up|down
        pocketchip-layout restore
+       pocketchip-layout keyboard-reset
 EOF
 }
 
@@ -77,6 +78,14 @@ release_modifiers() {
   xdotool keyup Alt_L Alt_R Control_L Control_R Shift_L Shift_R \
     Super_L Super_R ISO_Level3_Shift ISO_Level5_Shift Mode_switch \
     2>/dev/null || true
+
+  if command -v xset >/dev/null 2>&1 &&
+     xset q 2>/dev/null | grep -q 'Group 2:[[:space:]]*on'; then
+    xdotool key Mode_switch 2>/dev/null || true
+    xdotool keyup Alt_L Alt_R Control_L Control_R Shift_L Shift_R \
+      Super_L Super_R ISO_Level3_Shift ISO_Level5_Shift Mode_switch \
+      2>/dev/null || true
+  fi
 }
 
 focused_window_id() {
@@ -385,6 +394,9 @@ case "$cmd" in
     ;;
   restore)
     restore_normal
+    ;;
+  keyboard-reset|release-modifiers)
+    release_modifiers
     ;;
   *)
     usage

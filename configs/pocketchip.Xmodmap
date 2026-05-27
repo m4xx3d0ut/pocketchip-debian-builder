@@ -1,17 +1,17 @@
 ! PocketCHIP X11 key layer for terminal use.
 ! Right Alt is the PocketCHIP Fn/Mode_switch key.
 
-keycode 10 = 1 exclam F1 exclam
-keycode 11 = 2 at F2 at
-keycode 12 = 3 numbersign F3 numbersign
-keycode 13 = 4 dollar F4 dollar
-keycode 14 = 5 percent F5 percent
-keycode 15 = 6 asciicircum F6 asciicircum
-keycode 16 = 7 ampersand F7 ampersand
-keycode 17 = 8 asterisk F8 asterisk
-keycode 18 = 9 parenleft F9 parenleft
-keycode 19 = 0 parenright F10 parenright
-keycode 21 = plus equal F12 plus
+keycode 10 = 1 exclam 1 exclam
+keycode 11 = 2 at 2 at
+keycode 12 = 3 numbersign 3 numbersign
+keycode 13 = 4 dollar 4 dollar
+keycode 14 = 5 percent 5 percent
+keycode 15 = 6 asciicircum 6 asciicircum
+keycode 16 = 7 ampersand 7 ampersand
+keycode 17 = 8 asterisk 8 asterisk
+keycode 18 = 9 parenleft 9 parenleft
+keycode 19 = 0 parenright 0 parenright
+keycode 21 = plus equal plus equal
 keycode 22 = BackSpace BackSpace Delete BackSpace
 keycode 29 = y Y braceleft Y
 keycode 30 = u U braceright U
@@ -28,7 +28,7 @@ keycode 57 = n N asciitilde N
 keycode 58 = m M colon M
 keycode 60 = period comma semicolon comma
 keycode 61 = slash question backslash question
-keycode 82 = minus underscore F11 minus
+keycode 82 = minus underscore minus underscore
 keycode 108 = Mode_switch Meta_R Alt_R Meta_R
 keycode 111 = Up NoSymbol Prior
 keycode 113 = Left NoSymbol Home

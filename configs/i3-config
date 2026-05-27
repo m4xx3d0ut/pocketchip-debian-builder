@@ -19,7 +19,7 @@ bindsym $mod+z exec --no-startup-id pocketchip-i3-chord "$shift_chord" 4
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exit
-bindsym $mod+Shift+Escape exec --no-startup-id sh -lc 'pocketchip-layout restore >/dev/null 2>&1 || true; xdotool key --clearmodifiers F11 2>/dev/null || true; sleep 0.1; pocketchip-layout restore >/dev/null 2>&1 || true'
+bindsym $mod+Shift+Escape exec --no-startup-id sh -lc 'pocketchip-layout keyboard-reset >/dev/null 2>&1 || true; pocketchip-layout restore >/dev/null 2>&1 || true; xdotool key --clearmodifiers F11 2>/dev/null || true; sleep 0.1; pocketchip-layout restore >/dev/null 2>&1 || true; pocketchip-layout keyboard-reset >/dev/null 2>&1 || true'
 
 bindsym $mod+Shift+slash exec --no-startup-id $term -geometry 74x18 -e sh -lc 'less /usr/share/doc/pocketchip/i3-cheatsheet.md'
 bindsym $mod+i exec --no-startup-id $term -geometry 74x18 -e sh -lc 'pocketchip-about | less'

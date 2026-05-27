@@ -117,6 +117,11 @@ Mod+Backspace           send the OpenSSH disconnect escape to focused terminal
 Mod+Shift+Backspace     hard close focused window
 ```
 
+The physical top row is intentionally mapped to match its key labels on the
+normal and Fn/AltGr layers. It is not used as a hidden F-key row because a
+latched Fn/Mode_switch state can otherwise make terminal input accidentally
+emit F1-F12 or toggle Sakura fullscreen.
+
 For small-keyboard usability, `Mod+z` opens a short sticky shifted-command mode
 in i3. Press and release `Mod+z`, then press the normal action key within about
 4 seconds. This mirrors the common `Mod+Shift+...` actions without requiring a
@@ -335,9 +340,9 @@ Right Alt is treated as the PocketCHIP Fn/AltGr layer. Expected terminal-use
 combos include:
 
 ```text
-Fn+1..0       F1..F10
-Fn+-          F11
-Fn+=/+        F12
+Fn+1..0       1..0
+Fn+-          -
+Fn+=/+        +/=
 Fn+y/u        { }
 Fn+i/o        [ ]
 Fn+p          |

@@ -41,7 +41,7 @@ and `power:`.
 | Mod+z then q | close window |
 | Mod+Shift+r | reload i3 config |
 | Mod+Shift+e | exit i3 |
-| Mod+Shift+Esc | force exit app/i3 fullscreen |
+| Mod+Shift+Esc | clear stuck keyboard state and force exit fullscreen |
 
 `Mod+z` opens a short sticky shifted-command mode for the small keyboard.
 Press and release `Mod+z`, then press the action key within about 4 seconds.
@@ -66,6 +66,9 @@ Use `Mod+Backspace` only with a terminal/SSH session focused. It sends
 `Enter` followed by `~.`, which OpenSSH treats as a local disconnect escape at
 the start of a line. If the terminal itself is wedged, use
 `Mod+Shift+Backspace`.
+
+The physical top row stays label-faithful on the Fn layer too; use
+`Mod+Shift+f` for browser fullscreen.
 
 ## Browser And Gestures
 
