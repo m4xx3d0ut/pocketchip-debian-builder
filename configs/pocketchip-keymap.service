@@ -2,7 +2,7 @@
 Description=Load PocketCHIP console keymap
 DefaultDependencies=no
 After=local-fs.target
-Before=getty.target
+Before=getty.target getty@tty1.service serial-getty@ttyS0.service
 ConditionPathExists=/usr/local/share/keymaps/pocketchip.kmap
 
 [Service]

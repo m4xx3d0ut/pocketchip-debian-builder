@@ -353,6 +353,10 @@ Fn+m          :
 Fn+arrows     Home/End/PageUp/PageDown
 ```
 
+The Linux tty map is intentionally more conservative for login reliability:
+Backspace stays Backspace and arrows stay arrows even if Fn/AltGr is active.
+The richer Fn+arrow navigation layer is provided by the X11/i3 map.
+
 ## Xorg/i3 Verification
 
 Run `startx` as the configured user after the LCD and keyboard work:
